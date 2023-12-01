@@ -1,30 +1,30 @@
 .PHONY: generate profile clean
 
 generate:
-	@python3 -m dummy_pkg.setup
+	@python3 -m basal_gang.setup
 
 profile:
 	# @make clean
-	@python3 -m dummy_pkg.setup --profile
+	@python3 -m basal_gang.setup --profile
 
 notrace:
 	# @make clean
-	@python3 -m dummy_pkg.setup --notrace
+	@python3 -m basal_gang.setup --notrace
 
 hardcore:
 	# make clean
-	@python3 -m dummy_pkg.setup --hardcore
+	@python3 -m basal_gang.setup --hardcore
 
 hardcoreprofile:
 	# make clean
-	@python3 -m dummy_pkg.setup --hardcore --profile
+	@python3 -m basal_gang.setup --hardcore --profile
 
 clean:
 	@echo "Cleaning all.."
-	@rm -f dummy_pkg/*.c
-	@rm -f dummy_pkg/*.cpp
-	@rm -f dummy_pkg/*.so
-	@rm -f dummy_pkg/*.html
-	@rm -R -f dummy_pkg/build
-	@rm -R -f dummy_pkg/__pycache__
+	@rm -f basal_gang/*.c
+	@rm -f basal_gang/*.cpp
+	@rm -f basal_gang/*.so
+	@rm -f basal_gang/*.html
+	@rm -R -f basal_gang/build
+	@rm -R -f basal_gang/__pycache__
 	@echo "Cleaned."

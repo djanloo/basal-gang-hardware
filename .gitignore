@@ -4,7 +4,7 @@ __pycache__/
 *$py.class
 
 # Venv
-cythontemplate_venv
+venv_bg
 
 # C extensions
 *.so
