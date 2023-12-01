@@ -1,0 +1,17 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+cython = "*"
+rich = "*"
+line-profiler = "==3.5.1"
+numpy = "*"
+pandas = "*"
+tabulate = "*"
+
+[dev-packages]
+
+[requires]
+python_version = "3.10"
