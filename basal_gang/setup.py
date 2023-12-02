@@ -11,15 +11,28 @@ import pickle
 from tabulate import tabulate
 import pandas as pd
 
-MAKE_INFO_FILE = "make.info"
+import logging 
+from rich.logging import RichHandler
 
+logging.basicConfig(
+    level="INFO",
+    format="%(name)s - %(message)s",
+    datefmt="[%X]",
+    handlers=[RichHandler(markup=True,rich_tracebacks=True)]
+)
+logger = logging.getLogger('SETUP')
+
+
+MAKE_INFO_FILE = "make.info"
+BIN_FOLDER = 'bin'
+CYTHON_GEN_FOLDER = './cython_generated'
 
 def compare_make_infos(new_make_infos, summary):
     try:
         with open(MAKE_INFO_FILE, 'rb') as infof:
             make_infos = pickle.load(infof)
     except FileNotFoundError or EOFError:
-        print("MakeInfo file not found")
+        logger.warning("MakeInfo file not found")
         with open(MAKE_INFO_FILE, 'wb') as infof:
             pickle.dump({},infof)
         for file in new_make_infos.keys():
@@ -47,7 +60,7 @@ def update_make_infos(new_make_infos):
             make_infos = pickle.load(infof)
 
     except FileNotFoundError and EOFError:
-        print("MakeInfo file not found")
+        logger.warning("MakeInfo file not found")
         with open(MAKE_INFO_FILE, 'wb') as infof:
             pickle.dump(dict(), infof)
             make_infos = dict()
@@ -58,22 +71,29 @@ def update_make_infos(new_make_infos):
         pickle.dump(make_infos, infof)
 
 
-def get_files_and_timestamp( extension):
-    return {file.split('.')[0]:os.path.getmtime(file) for file in os.listdir(".") if file.endswith(extension)}
+def get_files_and_timestamp(extension, folder="./"):
+    logger.debug(f"Getting timestamps for {extension} files in {folder}")
+    logger.debug(f"Folder has files {os.listdir(folder)}")
+    return {file.split('.')[0]:os.path.getmtime(os.path.join(folder, file)) for file in os.listdir(folder) if file.endswith(extension)}
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--profile', action='store_true')
 parser.add_argument('--notrace', action='store_true')
 parser.add_argument('--hardcore', action='store_true')
+parser.add_argument('--remake', action='store_true')
+parser.add_argument('--debug', action='store_true')
 
 args = parser.parse_args()
+
+if args.debug:
+    logger.setLevel(logging.DEBUG)
 
 # Set the working directory
 old_dir = os.getcwd()
 packageDir = os.path.dirname(__file__)
 includedDir = [".", packageDir, np.get_include()]
 os.chdir(packageDir)
-print(f"Include dirs are {includedDir}")
+logger.debug(f"Include dirs are {includedDir}")
 
 extension_kwargs = dict( 
         include_dirs=includedDir,
@@ -95,7 +115,7 @@ cython_compiler_directives['djanloo_compile_mode'] = 'default'
 
 # Profiling using line_profiler
 if args.profile:
-    print("[blue]Compiling in [green]PROFILE[/green] mode[/blue]")
+    logger.info("[blue]Compiling in [green]PROFILE[/green] mode[/blue]")
     cython_compiler_directives['profile'] = True
     cython_compiler_directives['linetrace'] = True
     cython_compiler_directives['binding'] = True
@@ -110,7 +130,7 @@ if args.profile:
 # Globally boost speed by disabling checks
 # see https://cython.readthedocs.io/en/latest/src/userguide/source_files_and_compilation.html#compiler-directives
 if args.hardcore:
-    print("[blue]Compiling in [green]HARDCORE[/green] mode[/blue]")
+    logger.info("[blue]Compiling in [green]HARDCORE[/green] mode[/blue]")
     cython_compiler_directives['boundscheck'] = False
     cython_compiler_directives['cdivision'] = True
     cython_compiler_directives['wraparound'] = False
@@ -121,10 +141,14 @@ if args.hardcore:
 #################################################################
 
 cython_files = get_files_and_timestamp(".pyx")
-c_files = get_files_and_timestamp(".c")
-c_files.update(get_files_and_timestamp(".cpp"))
+logger.debug(f"Cython timestamps are {cython_files}")
+c_files = get_files_and_timestamp(".c", folder=CYTHON_GEN_FOLDER)
+c_files.update(get_files_and_timestamp(".cpp", folder=CYTHON_GEN_FOLDER))
+logger.debug(f"C timestamps are {c_files}")
 
-all_files = sorted(list(set(c_files.keys()) | set(cython_files.keys())))
+
+all_files = sorted(list( #set(c_files.keys()) |\
+                         set(cython_files.keys())))
 
 summary = dict()
 ###################### FILE VERSION COMPARISON ##################
@@ -133,7 +157,7 @@ for file in all_files:
     try:
         cython_files[file]
     except KeyError:
-        print(f"[red]C file {file:30} has no .pyx parent[/red]")
+        logger.warning(f"[red]C file {file:30} has no .pyx parent[/red]")
         continue
     try:
         c_files[file]
@@ -145,32 +169,42 @@ for file in all_files:
         else:
             summary[file]['edited'] = False
 
-################### UPDATE MAKE INFOS ##########################
+################### REMAKE ###############
+# If in remake mode, sets them all edited
+if args.remake:
+    for f in summary:
+        summary[f]['edited'] = True
+##########################################
 
+
+################### UPDATE MAKE INFOS ##########################
 new_make_infos = {f:cython_compiler_directives for f in summary.keys()}
 compare_make_infos(new_make_infos, summary)
 
 df = pd.DataFrame(summary).T
 print(df)
-################### GENERATION OF PXD FILES ###############
-for file in cython_files.keys():
-    declarations = []
-    with open(f"{file}.pyx", "r") as codefile:
-        for line in codefile:
-            line_clean = line.strip()
-            if line_clean.startswith("#"):
-                continue
-            if 'extern' in line:
-                continue
-            if line_clean.startswith('cdef') or \
-                line_clean.startswith("cpdef"):
-                if line_clean.endswith(":"):
-                    declarations.append(line_clean[:-1])
-    with open(f"{file}.pxd", "w") as declaration_file:
-        for dec in declarations:
-            declaration_file.write(dec + "\n")
-###########################################################
+
+# ################### GENERATION OF PXD FILES ###############
+# for file in cython_files.keys():
+#     declarations = []
+#     with open(f"{file}.pyx", "r") as codefile:
+#         for line in codefile:
+#             line_clean = line.strip()
+#             if line_clean.startswith("#"):
+#                 continue
+#             if 'extern' in line:
+#                 continue
+#             if line_clean.startswith('cdef') or \
+#                 line_clean.startswith("cpdef"):
+#                 if line_clean.endswith(":"):
+#                     declarations.append(line_clean[:-1])
+#     with open(f"{file}.pxd", "w") as declaration_file:
+#         for dec in declarations:
+#             declaration_file.write(dec + "\n")
+# ###########################################################
+
 edited_files = [f"{f}.pyx" for f in summary.keys() if summary[f]['edited']]
+logger.debug(f"Edited files are {edited_files}")
 
 ext_modules = [
     Extension(
@@ -182,25 +216,26 @@ ext_modules = [
 ]
 
 if not ext_modules:
-    print(f"[green]Everything up-to-date[/green]")
+    logger.info(f"[green]Everything up-to-date[/green]")
 else:
     
-    print(f"[blue]Cythonizing..[/blue]")
+    logger.info(f"[blue]Cythonizing..[/blue]")
     ext_modules = cythonize(ext_modules, 
                             nthreads=8,
                             compiler_directives=cython_compiler_directives,
                             include_path=["."],
+                            build_dir = CYTHON_GEN_FOLDER,
                             force=False,
                             annotate=False)
 
-    print(f"[blue]Now compiling modified extensions:[/blue]{[e.sources[0].split('.')[0] for e in ext_modules]}")
+    logger.info(f"[blue]Now compiling modified extensions:[/blue]{[os.path.basename(e.sources[0]) for e in ext_modules]}")
     setup(
         name=packageDir,
         cmdclass={"build_ext": build_ext},
         include_dirs=includedDir,
         ext_modules=ext_modules,
-        script_args=["build_ext"],
-        options={"build_ext": {"inplace": True, "force": True, "parallel":True}},
+        script_args=["build_ext", f"--build-lib=./{BIN_FOLDER}"],
+        options={"build_ext": {"inplace": False, "force": True, "parallel":True}},
         )
     
     new_make_infos = {f:cython_compiler_directives for f in summary.keys() if summary[f]['edited']}
