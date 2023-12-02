@@ -1,1 +1,0 @@
-cpdef SubstantiaNigra(Q)
