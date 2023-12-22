@@ -33,6 +33,7 @@ void aqif_neuron::evolve(){
 }
 
 // Populations stuff
+
 Population::Population(int n_neurons, neuron_type nt){
 
     Neuron * new_neuron;

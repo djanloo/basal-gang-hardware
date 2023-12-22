@@ -4,13 +4,7 @@
 
 using namespace std;
 
-enum neuron_type {dummy, aqif};
-
-class stupid_class{
-    public:
-        int stupid_attr;
-};
-
+enum class neuron_type {dummy, aqif};
 
 // Neurons stuff
 class Neuron{
@@ -20,7 +14,7 @@ class Neuron{
 
         vector<Neuron*> childs;
         vector<double> spike_times;
-        neuron_type nt = dummy;
+        neuron_type nt = neuron_type::dummy;
 
         Neuron();
         virtual void evolve();

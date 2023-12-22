@@ -106,9 +106,6 @@ extension_kwargs = dict(
 cython_compiler_directives = get_directive_defaults()
 cython_compiler_directives['language_level'] = "3"
 cython_compiler_directives['warn'] = True
-# cython_compiler_directives['warn.undeclared'] = True 
-# cython_compiler_directives['warn.maybe_uninitialized'] = True
-# cython_compiler_directives['warn.unused'] = True
 
 # This is for me
 cython_compiler_directives['djanloo_compile_mode'] = 'default'
@@ -144,6 +141,8 @@ cython_files = get_files_and_timestamp(".pyx")
 logger.debug(f"Cython timestamps are {cython_files}")
 c_files = get_files_and_timestamp(".c", folder=CYTHON_GEN_FOLDER)
 c_files.update(get_files_and_timestamp(".cpp", folder=CYTHON_GEN_FOLDER))
+c_files.update(get_files_and_timestamp(".cpp", folder="."))
+
 logger.debug(f"C timestamps are {c_files}")
 
 
@@ -208,12 +207,14 @@ logger.debug(f"Edited files are {edited_files}")
 
 ext_modules = [
     Extension(
-        cfile.strip(".pyx"),
-        [cfile],
+        edit_file.strip(".pyx"),
+        [edit_file],
         **extension_kwargs
     )
-    for cfile in edited_files
+    for edit_file in edited_files
 ]
+
+logger.debug(f"Source files are { {e.name: e.sources for e in ext_modules} }")
 
 if not ext_modules:
     logger.info(f"[green]Everything up-to-date[/green]")
