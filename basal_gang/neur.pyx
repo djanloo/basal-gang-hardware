@@ -30,7 +30,6 @@ cdef extern from "neurons.hpp" namespace "neuron_type":
 
 NEURON_TYPES = {"dummy":0, "aqif":1}
 
-
 #####################################################
 cdef extern from "neurons.hpp":
     cdef cppclass Projection:

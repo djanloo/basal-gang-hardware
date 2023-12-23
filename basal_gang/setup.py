@@ -1,5 +1,7 @@
 from setuptools import Extension, setup
 import os
+import sys
+
 import argparse
 from Cython.Distutils import build_ext
 from Cython.Compiler.Options import get_directive_defaults
@@ -7,7 +9,7 @@ from Cython.Build import cythonize
 
 import numpy as np
 from rich import print
-import pickle
+# import yaml
 from tabulate import tabulate
 import pandas as pd
 
@@ -30,12 +32,12 @@ CYTHON_GEN_FOLDER = './cython_generated'
 
 def compare_make_infos(new_make_infos, summary):
     try:
-        with open(MAKE_INFO_FILE, 'rb') as infof:
-            make_infos = pickle.load(infof)
+        with open(MAKE_INFO_FILE, "r") as infof:
+            make_infos = yaml.safe_load(infof)
     except FileNotFoundError or EOFError:
         logger.warning("MakeInfo file not found")
-        with open(MAKE_INFO_FILE, 'wb') as infof:
-            pickle.dump({},infof)
+        with open(MAKE_INFO_FILE, "w") as infof:
+            yaml.safe_dump({}, infof)
         for file in new_make_infos.keys():
             summary[file]['compilation diff'] = True
         return
@@ -57,19 +59,21 @@ def compare_make_infos(new_make_infos, summary):
 
 def update_make_infos(new_make_infos):
     try:
-        with open(MAKE_INFO_FILE, 'rb') as infof:
-            make_infos = pickle.load(infof)
+        with open(MAKE_INFO_FILE, "r") as infof:
+            make_infos = yaml.safe_load(infof)
 
     except FileNotFoundError and EOFError:
         logger.warning("MakeInfo file not found")
-        with open(MAKE_INFO_FILE, 'wb') as infof:
-            pickle.dump(dict(), infof)
-            make_infos = dict()
+        with open(MAKE_INFO_FILE, "w") as infof:
+            yaml.safe_dump(dict(dummy=6), infof)
+            make_infos = dict(dummy=6)
 
     make_infos.update(new_make_infos)
 
-    with open(MAKE_INFO_FILE, 'wb') as infof:
-        pickle.dump(make_infos, infof)
+    with open(MAKE_INFO_FILE, "w") as infof:
+        yaml.safe_dump(make_infos, infof)
+
+    logger.debug(f"Updating make infos with : {make_infos}")
 
 
 def get_files_and_timestamp(extension, folder="./"):
@@ -180,7 +184,8 @@ if args.remake:
 try:
     with open("cdependencies.yaml", "r") as dependencies:
         c_dependencies = yaml.safe_load(dependencies)
-        logger.debug(f"C-dependencies are:\n{c_dependencies}")
+        logger.debug(f"C-dependencies are:")
+        yaml.dump(c_dependencies, sys.stdout)
 except FileNotFoundError:
     logger.debug(f"C-dependencies not found")
     c_dependencies = dict()
@@ -226,7 +231,6 @@ for edited_file in edited_files:
         logger.debug(f"Adding sources {c_dependencies[extension_name]} to extension {extension_name}")
     ext_module = Extension(extension_name, source_files, **extension_kwargs, language="c++")
     ext_modules.append(ext_module)
-
 
 logger.debug(f"Source files are { {e.name: e.sources for e in ext_modules} }")
 
