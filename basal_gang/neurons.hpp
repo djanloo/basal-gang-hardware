@@ -1,10 +1,17 @@
+#pragma once
 #include <iostream>
 #include <vector>
 #include <list>
 
 using namespace std;
 
-enum class neuron_type {dummy, aqif};
+enum class neuron_type :int {dummy, aqif};
+
+class dummy_obj{
+    public:
+        dummy_obj();
+        int bro; 
+};
 
 // Neurons stuff
 class Neuron{

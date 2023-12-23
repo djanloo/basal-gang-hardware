@@ -5,6 +5,9 @@
 
 using namespace std;
 
+dummy_obj::dummy_obj(){
+    bro = 10;
+};
 
 Neuron::Neuron(){
     state = vector<double> { ((float)rand())/RAND_MAX, ((float)rand())/RAND_MAX};
@@ -33,11 +36,10 @@ void aqif_neuron::evolve(){
 }
 
 // Populations stuff
-
 Population::Population(int n_neurons, neuron_type nt){
-
-    Neuron * new_neuron;
-
+    cout << "making a population of " << n_neurons << "neurons" << endl;
+    this -> n_neurons = n_neurons;
+    
     for ( int i = 0; i < n_neurons; i++){
         switch(nt){
         case neuron_type::dummy: 
@@ -62,4 +64,6 @@ int main(){
         cout << neuron -> state[0] << endl;
         // cout << "neuron type:" << neuron -> nt << endl;
     }
+
+    cout << "Pop has number: " << a.n_neurons << endl;
 }

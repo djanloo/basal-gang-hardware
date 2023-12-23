@@ -13,6 +13,7 @@ import pandas as pd
 
 import logging 
 from rich.logging import RichHandler
+import yaml
 
 logging.basicConfig(
     level="INFO",
@@ -22,10 +23,10 @@ logging.basicConfig(
 )
 logger = logging.getLogger('SETUP')
 
-
 MAKE_INFO_FILE = "make.info"
 BIN_FOLDER = 'bin'
 CYTHON_GEN_FOLDER = './cython_generated'
+
 
 def compare_make_infos(new_make_infos, summary):
     try:
@@ -174,6 +175,16 @@ if args.remake:
     for f in summary:
         summary[f]['edited'] = True
 ##########################################
+        
+################## DEPENDENCIES #############
+try:
+    with open("cdependencies.yaml", "r") as dependencies:
+        c_dependencies = yaml.safe_load(dependencies)
+        logger.debug(f"C-dependencies are:\n{c_dependencies}")
+except FileNotFoundError:
+    logger.debug(f"C-dependencies not found")
+    c_dependencies = dict()
+    pass
 
 
 ################### UPDATE MAKE INFOS ##########################
@@ -205,14 +216,17 @@ print(df)
 edited_files = [f"{f}.pyx" for f in summary.keys() if summary[f]['edited']]
 logger.debug(f"Edited files are {edited_files}")
 
-ext_modules = [
-    Extension(
-        edit_file.strip(".pyx"),
-        [edit_file],
-        **extension_kwargs
-    )
-    for edit_file in edited_files
-]
+ext_modules = []
+for edited_file in edited_files:
+    extension_name = edited_file.strip(".pyx")
+    source_files = [edited_file]
+
+    if extension_name in c_dependencies.keys():
+        source_files += c_dependencies[extension_name]
+        logger.debug(f"Adding sources {c_dependencies[extension_name]} to extension {extension_name}")
+    ext_module = Extension(extension_name, source_files, **extension_kwargs, language="c++")
+    ext_modules.append(ext_module)
+
 
 logger.debug(f"Source files are { {e.name: e.sources for e in ext_modules} }")
 

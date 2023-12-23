@@ -1,0 +1,7 @@
+# This file is intended for linking the source file while building the cython
+# extension. For each .pyx file must be specified which .cpp files it takes
+# stuff from. Not doing this will result in a 'undefined symbol' when
+# importing the module
+
+neur:
+  - neurons.cpp
