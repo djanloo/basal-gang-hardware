@@ -1,6 +1,9 @@
 # Created by https://www.toptal.com/developers/gitignore/api/linux,visualstudiocode,c++,python
 # Edit at https://www.toptal.com/developers/gitignore?templates=linux,visualstudiocode,c++,python
 
+# VScode files 
+.vscode/
+
 ### C++ ###
 # Prerequisites
 *.d
