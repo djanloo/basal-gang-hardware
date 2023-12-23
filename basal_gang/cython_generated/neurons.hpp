@@ -45,3 +45,10 @@ class Population{
         void project(Population * child_pop);
         void evolve();
 };
+
+
+class Projection{
+    public:
+        int start_dimension, end_dimension;
+        Projection(double ** memoryview, int start_dimension, int end_dimension);
+};
