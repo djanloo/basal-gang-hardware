@@ -2,18 +2,18 @@
 import numpy as np
 cimport numpy as np
 
-cimport cython
 from libc.stdlib cimport malloc, free
 import ctypes
+
+cdef extern from "base_objects.hpp":
+    cdef cppclass EvolutionContext:
+        double dt
+        double now
+        EvolutionContext()
 
 cdef extern from "neurons.hpp":
     cdef cppclass neuron_type:
         pass
-
-cdef extern from "neurons.hpp":
-    cdef cppclass EvolutionContext:
-        double dt
-        double now
 
 cdef extern from "neurons.hpp" namespace "neuron_type":
     cdef neuron_type dummy
@@ -21,38 +21,46 @@ cdef extern from "neurons.hpp" namespace "neuron_type":
 
 NEURON_TYPES = {"dummy":0, "aqif":1}
 
-cdef extern from "neurons.hpp":
+cdef extern from "network.hpp":
     cdef cppclass Projection:
         int start_dimension, end_dimension
-        Projection(double ** memoryview, int start_dimension, int end_dimension)
+        Projection(double ** weights, double ** delays, int start_dimension, int end_dimension)
 
 cdef class PyProjection():
+
     cdef int start_dimension, end_dimension
+    cdef double ** _weights
+    cdef double ** _delays 
     cdef Projection * _projection
     
-    def __cinit__(self,  np.ndarray[np.double_t,ndim=2,mode='c'] mat):
+    def __cinit__(self,  np.ndarray[np.double_t,ndim=2,mode='c'] weights, np.ndarray[np.double_t,ndim=2,mode='c'] delays):
 
-        self.start_dimension = mat.shape[0]
-        self.end_dimension = mat.shape[1]
+        self.start_dimension = weights.shape[0]
+        self.end_dimension   = weights.shape[1]
 
-        cdef np.ndarray[double, ndim=2, mode="c"] temp_mat = np.ascontiguousarray(mat, dtype = ctypes.c_double)
-        cdef double ** mat_pointer = <double **> malloc(self.start_dimension * sizeof(double*))
+        cdef np.ndarray[double, ndim=2, mode="c"] contiguous_weights = np.ascontiguousarray(weights, dtype = ctypes.c_double)
+        cdef np.ndarray[double, ndim=2, mode="c"] contiguous_delays = np.ascontiguousarray(delays, dtype = ctypes.c_double)
 
-        if not mat_pointer:
+        self._weights = <double **> malloc(self.start_dimension * sizeof(double*))
+        self._delays  = <double **> malloc(self.start_dimension * sizeof(double*))
+
+        if not self._weights or not self._delays:
             raise MemoryError
 
         cdef int i
         for i in range(self.start_dimension):
-            mat_pointer[i] = &temp_mat[i, 0]
+            self._weights[i] = &contiguous_weights[i, 0]
+            self._delays[i] = &contiguous_delays[i,0]
 
-        self._projection = new Projection(<double **> &mat_pointer[0], self.start_dimension, self.end_dimension)
+        self._projection = new Projection(  <double **> &self._weights[0], 
+                                            <double **> &self._delays[0], 
+                                            self.start_dimension, 
+                                            self.end_dimension)
 
-cdef extern from "neurons.hpp":
+cdef extern from "network.hpp":
     cdef cppclass Population:
         int n_neurons
         Population(int n_neurons, neuron_type nt)
-
-
 
 cdef class PyPopulation:
 
@@ -72,6 +80,6 @@ cdef class PyPopulation:
             del self._population
 
 
-cdef extern from "neurons.hpp":
+cdef extern from "network.hpp":
     cdef cppclass SpikingNetwork:
-        evolve(EvolutionContext * evo)
+        run(EvolutionContext * evo, double time)        

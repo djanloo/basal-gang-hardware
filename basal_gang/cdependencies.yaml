@@ -5,3 +5,4 @@
 
 neur:
   - neurons.cpp
+  - network.cpp
