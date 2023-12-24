@@ -6,20 +6,6 @@ cimport cython
 from libc.stdlib cimport malloc, free
 import ctypes
 
-# cdef extern from "neurons.hpp":
-#     cdef cppclass dummy_obj:
-#         int bro
-#         dummy_method()
-
-# cdef class pydummy:
-
-#     cdef dummy_obj * _dummy_obj
-
-#     def __cinit__(self):
-#         self._dummy_obj = new dummy_obj()
-#         print(self._dummy_obj.bro)
-
-##########################################################
 cdef extern from "neurons.hpp":
     cdef cppclass neuron_type:
         pass
@@ -30,7 +16,6 @@ cdef extern from "neurons.hpp" namespace "neuron_type":
 
 NEURON_TYPES = {"dummy":0, "aqif":1}
 
-#####################################################
 cdef extern from "neurons.hpp":
     cdef cppclass Projection:
         int start_dimension, end_dimension
@@ -57,12 +42,12 @@ cdef class PyProjection():
 
         self._projection = new Projection(<double **> &mat_pointer[0], self.start_dimension, self.end_dimension)
 
-
-# #########################################################
 cdef extern from "neurons.hpp":
     cdef cppclass Population:
         int n_neurons
         Population(int n_neurons, neuron_type nt)
+
+
 
 cdef class PyPopulation:
 
@@ -78,7 +63,5 @@ cdef class PyPopulation:
         return self._population.n_neurons
 
     def __dealloc__(self):
-        # if self._nt != NULL:
-        #     del self._nt
         if self._population != NULL:
             del self._population

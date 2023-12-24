@@ -9,8 +9,6 @@ from Cython.Build import cythonize
 
 import numpy as np
 from rich import print
-# import yaml
-from tabulate import tabulate
 import pandas as pd
 
 import logging 
@@ -25,9 +23,20 @@ logging.basicConfig(
 )
 logger = logging.getLogger('SETUP')
 
-MAKE_INFO_FILE = "make.info"
 BIN_FOLDER = 'bin'
 CYTHON_GEN_FOLDER = './cython_generated'
+MAKE_INFO_FILE = f"{CYTHON_GEN_FOLDER}/make.info"
+
+# Set the working directory
+old_dir = os.getcwd()
+packageDir = os.path.dirname(__file__)
+includedDir = [".", packageDir, np.get_include()]
+os.chdir(packageDir)
+logger.debug(f"Include dirs are {includedDir}")
+
+# Creates directory for generated files if not existing
+if not os.path.exists(CYTHON_GEN_FOLDER):
+    os.mkdir(CYTHON_GEN_FOLDER)
 
 
 def compare_make_infos(new_make_infos, summary):
@@ -92,13 +101,6 @@ args = parser.parse_args()
 
 if args.debug:
     logger.setLevel(logging.DEBUG)
-
-# Set the working directory
-old_dir = os.getcwd()
-packageDir = os.path.dirname(__file__)
-includedDir = [".", packageDir, np.get_include()]
-os.chdir(packageDir)
-logger.debug(f"Include dirs are {includedDir}")
 
 extension_kwargs = dict( 
         include_dirs=includedDir,
@@ -184,8 +186,6 @@ if args.remake:
 try:
     with open("cdependencies.yaml", "r") as dependencies:
         c_dependencies = yaml.safe_load(dependencies)
-        logger.debug(f"C-dependencies are:")
-        yaml.dump(c_dependencies, sys.stdout)
 except FileNotFoundError:
     logger.debug(f"C-dependencies not found")
     c_dependencies = dict()
