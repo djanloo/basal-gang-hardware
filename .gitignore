@@ -4,8 +4,9 @@
 # VScode files 
 .vscode/
 
-## Cyhton generated
+## Cyhton generated & binaries
 cython_generated*/
+bin/
 
 ### C++ ###
 # Prerequisites

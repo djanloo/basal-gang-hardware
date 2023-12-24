@@ -18,7 +18,7 @@ class Projection;
 class EvolutionContext{
     public:
         double now; // time in millis
-        double dt; // timestep in millis
+        double dt;  // timestep in millis
 
         EvolutionContext(double _dt){
             this -> dt = _dt;
@@ -30,10 +30,12 @@ class EvolutionContext{
 class Spike{
     public:
         double weight, arrival_time;
+        bool processed;
         // Remember to deallocate once you're done with me !
         Spike(double _weight, double _arrival_time){
             this -> weight = _weight;
             this -> arrival_time = _arrival_time;
+            this -> processed = false;
         }
 };
 
@@ -43,22 +45,32 @@ class Axon{
         Neuron * postsynaptic;
         double weight, delay;
 
-        Axon(Neuron * _presynaptic, Neuron * _postsynaptic, double _weight, double _delay);
+        Axon(Neuron * _presynaptic, Neuron * _postsynaptic, double _weight, double _delay){
+            this -> presynaptic = _presynaptic;
+            this -> postsynaptic = _postsynaptic;
+            this -> weight = _weight;
+            this -> delay = _delay;
+        }
         void fire(EvolutionContext * evo);
 };
 
 class Neuron{
     public:
+        // Base properties
         vector<double> state;
-        int state_dimension;
         neuron_type nt = neuron_type::dummy;
         int index;
 
+        // Physiological properties
+        float tau_refrac, tau_e, tau_i, tau_m;
+        double E_exc, E_inh, E_rest, E_thr;
+
+        // Spike stuff
         vector<Axon*> efferent_axons;
-        vector<Spike*> incoming_exc_spikes, incoming_inh_spikes;
+        vector<Spike*> incoming_spikes;
+        double last_spike_time;
 
         Neuron(int _index);
-        
         void connect(Neuron * neuron, double weight, double delay);
         void spike(EvolutionContext * evo);
         virtual void evolve(EvolutionContext * evo);
@@ -87,7 +99,6 @@ class Projection{
 
         Projection(double ** weights, double ** delays, int start_dimension, int end_dimension);
 };
-
 
 class SpikingNetwork{
     public:

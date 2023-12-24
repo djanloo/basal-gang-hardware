@@ -10,6 +10,11 @@ cdef extern from "neurons.hpp":
     cdef cppclass neuron_type:
         pass
 
+cdef extern from "neurons.hpp":
+    cdef cppclass EvolutionContext:
+        double dt
+        double now
+
 cdef extern from "neurons.hpp" namespace "neuron_type":
     cdef neuron_type dummy
     cdef neuron_type aqif
@@ -65,3 +70,8 @@ cdef class PyPopulation:
     def __dealloc__(self):
         if self._population != NULL:
             del self._population
+
+
+cdef extern from "neurons.hpp":
+    cdef cppclass SpikingNetwork:
+        evolve(EvolutionContext * evo)
