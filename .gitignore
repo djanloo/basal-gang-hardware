@@ -4,6 +4,9 @@
 # VScode files 
 .vscode/
 
+## Cyhton generated
+cython_generated*/
+
 ### C++ ###
 # Prerequisites
 *.d
