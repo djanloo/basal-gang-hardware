@@ -54,14 +54,15 @@ class Neuron{
         void evolve(EvolutionContext * evo);
 
         // These must be implemented for each specific neuron
-        virtual void evolve_state(EvolutionContext * evo);
-        virtual void evolve_synapses(EvolutionContext * evo);
+        virtual void evolve_state(EvolutionContext * evo){cout << "WARNING: using virtual evolve_state of <Neuron>";};
+        virtual void evolve_synapses(EvolutionContext * evo){cout << "WARNING: using virtual evolve_synapses of <Neuron>";};
 };
 
 
 class aqif_neuron : public Neuron {
     public:
         aqif_neuron(Population * population) : Neuron(population){this -> nt = neuron_type::aqif;};
+
         void evolve_state(EvolutionContext * evo) override; 
         void evolve_synapses(EvolutionContext * evo) override;
 };

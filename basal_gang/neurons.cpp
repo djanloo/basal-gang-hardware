@@ -19,6 +19,7 @@ void Axon::fire(EvolutionContext * evo){
 Neuron::Neuron(Population * population){
     this -> state = vector<double> { ((double)rand())/RAND_MAX - 1.0, 0.0, 0.0};
     this -> id = new HierarchicalID( population -> id);
+    this -> population = population;
 
     // TODO: too much redundancy in parameters. 
     // If parameter is the same for the population
@@ -63,12 +64,8 @@ void Neuron::handle_incoming_spikes(EvolutionContext * evo){
     }
 }
 
-void Neuron::evolve_state(EvolutionContext * evo){
-    cout << "WARNING: virtual <Neuron> evolution has been used";
-};
-
 void Neuron::evolve(EvolutionContext * evo){
-
+    // cout << "evolving neuron " << this->id->local_id<< endl; 
     // Gather spikes
     this-> handle_incoming_spikes(evo);
 
@@ -87,18 +84,19 @@ void Neuron::evolve(EvolutionContext * evo){
 }
 
 void Neuron::spike(EvolutionContext * evo){
-    cout << "neuron: " << this->id->local_id << "\tPopulation " << this->id->parent->local_id << " spiked (" << evo->now << ") ms"<< endl;
     for (auto axon : this->efferent_axons){
         (*axon).fire(evo);
     }
     this -> last_spike_time = evo -> now;
     this -> state[0] = this->E_rest;
+
+    ((this->population)->n_spikes_last_step) ++;
 }
 
 // *************************** More detailed models ************************ //
 
 void aqif_neuron::evolve_state(EvolutionContext * evo){
-
+    // cout << "calling evolve_state" << endl;
     // Membrane decay
     this->state[0] -= ( this->state[0] - this->E_rest) * evo->dt / this->tau_m;
     // Synaptic currents

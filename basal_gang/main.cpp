@@ -40,7 +40,7 @@ int main(){
 
     for (int i = 0; i < Na; i ++){
         for (int j=0; j < Nb; j++){
-            if (weights[i][j] < 0.1){
+            if (weights[i][j] < 0.8){
                 weights[i][j] = 0.0;
                 delays[i][j] = 0.0;
             }
@@ -50,6 +50,7 @@ int main(){
     Projection * projection = new Projection(weights, delays, Na, Nb);
 
     a.project(projection, &b);
+    b.project(projection, &a);
 
     delete projection;
     free_proj_mat(weights, Na);
@@ -57,13 +58,17 @@ int main(){
 
 
     EvolutionContext evo = EvolutionContext(0.1);
-    for (int i=0; i < 100; i++){
+    
+    auto start  = chrono::high_resolution_clock::now();
+    int n_steps = 100;
+    for (int i=0; i < n_steps; i++){
         sn.evolve(&evo);
-        a.neurons[0]-> state[1] += 0.0;
-        cout << "time :" << evo.now << endl;
-        cout << "N0-V: " <<  a.neurons[0]->state[0] << endl;
-        cout << "N0-ge: " << a.neurons[0]->state[1] << endl;
-        cout << "N0-gi: " << a.neurons[0]->state[2] << endl;
+        cout << "spikes  a: " << a.n_spikes_last_step << endl;
+        cout << "spikes  b: " << b.n_spikes_last_step << endl;
     }
+    auto end = chrono::high_resolution_clock::now();
+
+    cout << "simulation took " << (chrono::duration_cast<chrono::seconds>(end -start)).count() << " ms";
+    cout << "\t(" << ((double)(chrono::duration_cast<chrono::seconds>(end -start)).count())/n_steps << " ms/step)" << endl;
 }
 
