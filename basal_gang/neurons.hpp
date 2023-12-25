@@ -45,15 +45,23 @@ class Neuron{
         vector<Spike*> incoming_spikes;
         double last_spike_time;
 
-        Neuron(Population * population);
+        // Yeah I know, not beautiful but think about it
+        // nobody has ever to initialize a neuron outside a population
+        Neuron(Population * population); 
         void connect(Neuron * neuron, double weight, double delay);
+        void handle_incoming_spikes(EvolutionContext * evo);
         void spike(EvolutionContext * evo);
-        virtual void evolve(EvolutionContext * evo);
+        void evolve(EvolutionContext * evo);
+
+        // These must be implemented for each specific neuron
+        virtual void evolve_state(EvolutionContext * evo);
+        virtual void evolve_synapses(EvolutionContext * evo);
 };
 
 
 class aqif_neuron : public Neuron {
     public:
-        aqif_neuron(Population * population);
-        void evolve(EvolutionContext * evo);
+        aqif_neuron(Population * population) : Neuron(population){this -> nt = neuron_type::aqif;};
+        void evolve_state(EvolutionContext * evo) override; 
+        void evolve_synapses(EvolutionContext * evo) override;
 };

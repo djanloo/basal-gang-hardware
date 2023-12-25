@@ -43,29 +43,10 @@ void Neuron::connect(Neuron * neuron, double weight, double delay){
     (this -> efferent_axons).push_back(new Axon(this, neuron, weight, delay));
 }
 
-void Neuron::evolve(EvolutionContext * evo){
-    state[0] += 1.5; // A nice dummy nonsense, impossible to not see this :)
-};
-
-void Neuron::spike(EvolutionContext * evo){
-    cout << "neuron: " << this->id->local_id << "\tPopulation " << this->id->parent->local_id << " spiked (" << evo->now << ") ms"<< endl;
-    for (auto axon : this->efferent_axons){
-        (*axon).fire(evo);
-    }
-    this -> last_spike_time = evo -> now;
-    this -> state[0] = this->E_rest;
-}
-
-aqif_neuron::aqif_neuron(Population * population) : Neuron(population){
-    this -> nt = neuron_type::aqif;
-}
-
-void aqif_neuron::evolve(EvolutionContext * evo){
-
+void Neuron::handle_incoming_spikes(EvolutionContext * evo){
     // Spike processing
-    // This could be general
     for (auto spike : this -> incoming_spikes){
-        if (!( spike -> processed)){
+        if (!(spike -> processed)){
             if ((spike->arrival_time >= evo->now ) && (spike->arrival_time < evo->now + evo->dt)){
                 // Excitatory
                 if (spike->weight > 0.0){ 
@@ -80,24 +61,55 @@ void aqif_neuron::evolve(EvolutionContext * evo){
             }
         }
     }
+}
+
+void Neuron::evolve_state(EvolutionContext * evo){
+    cout << "WARNING: virtual <Neuron> evolution has been used";
+};
+
+void Neuron::evolve(EvolutionContext * evo){
+
+    // Gather spikes
+    this-> handle_incoming_spikes(evo);
 
     // Sub-threshold evolution
     if ( (evo->now) > (this->last_spike_time) + (this->tau_refrac) ){
-        // cout << "neuron " << this-> id.local_id  << " of population " << id.parent->local_id << " is evolving " << endl;
-        // Membrane decay
-        this->state[0] -= ( this->state[0] - this->E_rest) * evo->dt / this->tau_m;
-        // Synaptic currents
-        this -> state [0] -= evo -> dt * (this -> state [1])*( this -> state[0] - this -> E_exc);
-        this -> state [0] -= evo -> dt * (this -> state [2])*( this -> state[0] - this -> E_inh);
+        this-> evolve_state(evo);
     }
-    // Synaptic dynamics
-    this->state[1] -= (this->state[1]) * (evo->dt) / (this->tau_e);
-    this->state[2] -= (this->state[2]) * (evo->dt) / (this->tau_i);
 
+    // Synaptic dynamic
+    this->evolve_synapses(evo);
+    
     // Spike generation
     if ((this -> state[0]) > this->E_thr){
         this -> spike(evo);
     }
+}
+
+void Neuron::spike(EvolutionContext * evo){
+    cout << "neuron: " << this->id->local_id << "\tPopulation " << this->id->parent->local_id << " spiked (" << evo->now << ") ms"<< endl;
+    for (auto axon : this->efferent_axons){
+        (*axon).fire(evo);
+    }
+    this -> last_spike_time = evo -> now;
+    this -> state[0] = this->E_rest;
+}
+
+// *************************** More detailed models ************************ //
+
+void aqif_neuron::evolve_state(EvolutionContext * evo){
+
+    // Membrane decay
+    this->state[0] -= ( this->state[0] - this->E_rest) * evo->dt / this->tau_m;
+    // Synaptic currents
+    this -> state [0] -= evo -> dt * (this -> state [1])*( this -> state[0] - this -> E_exc);
+    this -> state [0] -= evo -> dt * (this -> state [2])*( this -> state[0] - this -> E_inh);
+
+}
+
+void aqif_neuron::evolve_synapses(EvolutionContext * evo){
+    this->state[1] -= (this->state[1]) * (evo->dt) / (this->tau_e);
+    this->state[2] -= (this->state[2]) * (evo->dt) / (this->tau_i);
 }
 
 
