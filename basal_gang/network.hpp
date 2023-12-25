@@ -7,11 +7,17 @@
 #include "base_objects.hpp"
 #include "neurons.hpp"
 
+class Population;
+class SpikingNetwork;
+class Projection;
+
 class Population{
     public:
-        vector<Neuron*> neurons;
         int n_neurons;
-        Population(int n_neurons, neuron_type nt);
+        vector<Neuron*> neurons;
+        HierarchicalID * id;
+
+        Population(int n_neurons, neuron_type nt, SpikingNetwork * spiking_network);
         void project(Projection * projection, Population * child_pop);
         void evolve(EvolutionContext * evo);
 };
@@ -27,12 +33,12 @@ class Projection{
 class SpikingNetwork{
     public:
         vector<Population*> populations;
-        double dt;
+        HierarchicalID * id;
 
-        SpikingNetwork(vector<Population*> _populations){
-            this -> populations = _populations;
+        SpikingNetwork(){
+            this->id = new HierarchicalID();
         }
 
         void evolve(EvolutionContext * evo);
-        void run(EvolutionContext * evo, time);
+        void run(EvolutionContext * evo, double time);
 };

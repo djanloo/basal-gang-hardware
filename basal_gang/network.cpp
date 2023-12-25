@@ -7,20 +7,25 @@
 #include "neurons.hpp"
 #include "network.hpp"
 
-Population::Population(int n_neurons, neuron_type nt){
+Population::Population(int n_neurons, neuron_type nt, SpikingNetwork * spiking_network){
     this -> n_neurons = n_neurons;
+    this -> id = new HierarchicalID(spiking_network->id);
+    
+    auto start = chrono::high_resolution_clock::now();
 
     for ( int i = 0; i < n_neurons; i++){
+        // The big switch, in Python this would be easier.
+        // It's not particulary efficient but it has to be done
+        // just once so nvm
         switch(nt){
-        case neuron_type::dummy: 
-            neurons.push_back(new Neuron(i));
-            break;
-
-        case neuron_type::aqif:
-            neurons.push_back(new aqif_neuron(i));
-            break;
-    };
+        case neuron_type::dummy: neurons.push_back(new Neuron(this)); break;
+        case neuron_type::aqif: neurons.push_back(new aqif_neuron(this)); break;
+        };
     }
+
+    auto end = chrono::high_resolution_clock::now();
+    cout << "Building population "<< this->id->local_id << " took " << (chrono::duration_cast<chrono::milliseconds>(end -start)).count() << " ms" << endl;
+    
 }
 
 Projection::Projection(double ** _weights, double ** _delays, int _start_dimension, int _end_dimension){

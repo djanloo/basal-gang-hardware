@@ -4,7 +4,6 @@
 #include "neurons.hpp"
 #include "network.hpp"
 
-
 double ** get_rand_proj_mat(int N, int M){
     double** matrix = new double*[N];
     for (int i = 0; i < N; ++i) {
@@ -16,7 +15,6 @@ double ** get_rand_proj_mat(int N, int M){
             matrix[i][j] = 2*(((double) rand())/RAND_MAX - 0.5);
         }
     }
-
     return matrix;
 }
 
@@ -28,10 +26,12 @@ void free_proj_mat(double** matrix, int N) {
 }
 
 int main(){
-    int Na = 500;
-    int Nb = 500;
-    Population a = Population(Na, neuron_type::aqif);
-    Population b = Population(Nb, neuron_type::aqif);
+    int Na = 5000;
+    int Nb = 5000;
+
+    SpikingNetwork sn = SpikingNetwork();
+    Population a = Population(Na, neuron_type::aqif, &sn);
+    Population b = Population(Nb, neuron_type::aqif, &sn);
 
     double ** weights, **delays;
 
@@ -55,12 +55,11 @@ int main(){
     free_proj_mat(weights, Na);
     free_proj_mat(delays, Nb);
 
-    vector<Population*> populations = vector<Population*> {&a, &b};
 
-    SpikingNetwork net = SpikingNetwork(populations);
     EvolutionContext evo = EvolutionContext(0.1);
     for (int i=0; i < 100; i++){
-        net.evolve(&evo);
+        sn.evolve(&evo);
+        a.neurons[0]-> state[1] += 0.0;
         cout << "time :" << evo.now << endl;
         cout << "N0-V: " <<  a.neurons[0]->state[0] << endl;
         cout << "N0-ge: " << a.neurons[0]->state[1] << endl;

@@ -33,7 +33,8 @@ class Neuron{
         // Base properties
         vector<double> state;
         neuron_type nt = neuron_type::dummy;
-        int index;
+        HierarchicalID * id;
+        Population * population;
 
         // Physiological properties
         float tau_refrac, tau_e, tau_i, tau_m;
@@ -44,7 +45,7 @@ class Neuron{
         vector<Spike*> incoming_spikes;
         double last_spike_time;
 
-        Neuron(int _index);
+        Neuron(Population * population);
         void connect(Neuron * neuron, double weight, double delay);
         void spike(EvolutionContext * evo);
         virtual void evolve(EvolutionContext * evo);
@@ -53,6 +54,6 @@ class Neuron{
 
 class aqif_neuron : public Neuron {
     public:
-        aqif_neuron(int _index);
+        aqif_neuron(Population * population);
         void evolve(EvolutionContext * evo);
 };
