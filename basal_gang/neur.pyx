@@ -11,6 +11,9 @@ cdef extern from "base_objects.hpp":
         double now
         EvolutionContext()
 
+    cdef cppclass HierarchicalID:
+        pass
+
 cdef extern from "neurons.hpp":
     cdef cppclass neuron_type:
         pass
@@ -52,24 +55,24 @@ cdef class PyProjection():
             self._weights[i] = &contiguous_weights[i, 0]
             self._delays[i] = &contiguous_delays[i,0]
 
-        self._projection = new Projection(  <double **> &self._weights[0], 
-                                            <double **> &self._delays[0], 
+        self._projection = new Projection(  <double**> &self._weights[0], 
+                                            <double**> &self._delays[0], 
                                             self.start_dimension, 
                                             self.end_dimension)
 
 cdef extern from "network.hpp":
     cdef cppclass Population:
         int n_neurons
-        Population(int n_neurons, neuron_type nt)
+        Population(int n_neurons, neuron_type nt, HierarchicalID * spikenet_id)
 
 cdef class PyPopulation:
 
     cdef Population * _population
     cdef neuron_type _nt
 
-    def __cinit__(self,int n_neurons, str poptype):
+    def __cinit__(self, int n_neurons, str poptype, PySpikingNetwork spikenet):
         self._nt = <neuron_type><int>NEURON_TYPES[poptype]
-        self._population = new Population(<int>n_neurons, self._nt)
+        self._population = new Population(<int>n_neurons, self._nt, &spikenet._spiking_network.id)
 
     @property
     def n_neurons(self):
@@ -82,4 +85,17 @@ cdef class PyPopulation:
 
 cdef extern from "network.hpp":
     cdef cppclass SpikingNetwork:
-        run(EvolutionContext * evo, double time)        
+        HierarchicalID id
+        void add_population(Population * pop)
+        run(EvolutionContext * evo, double time) 
+
+cdef class PySpikingNetwork:
+
+    cdef SpikingNetwork * _spiking_network
+    cdef str name
+    def __cinit__(self, str name):
+        self._spiking_network = new SpikingNetwork()
+        self.name = name
+
+    cdef add_population(self, PyPopulation pypop):
+        (self._spiking_network).add_population( pypop._population )
