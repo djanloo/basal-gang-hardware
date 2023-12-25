@@ -63,6 +63,7 @@ aqif_neuron::aqif_neuron(Population * population) : Neuron(population){
 void aqif_neuron::evolve(EvolutionContext * evo){
 
     // Spike processing
+    // This could be general
     for (auto spike : this -> incoming_spikes){
         if (!( spike -> processed)){
             if ((spike->arrival_time >= evo->now ) && (spike->arrival_time < evo->now + evo->dt)){
