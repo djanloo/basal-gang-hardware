@@ -17,22 +17,24 @@ void Axon::fire(EvolutionContext * evo){
 }
 
 Neuron::Neuron(Population * population){
-    this -> state = vector<double> { ((double)rand())/RAND_MAX - 1.0, 0.0, 0.0};
-    this -> id = new HierarchicalID( population -> id);
-    this -> population = population;
-
     // TODO: too much redundancy in parameters. 
     // If parameter is the same for the population
     // use a this -> population -> value
     this->E_exc = 0.0;      // mV
     this->E_inh = -80.0;    // mV
     this->E_rest = -60.0;   // mV
-    this->E_thr = -50.0;     // mV
+    this->E_thr = -40.0;     // mV
     
     this->tau_refrac = 1;  // ms
     this->tau_i = 10;
     this->tau_e = 5;
     this->tau_m = 15;
+
+    this -> state = vector<double> {  this -> E_rest + ((double)rand())/RAND_MAX, 0.0, 0.0};
+
+
+    this -> id = new HierarchicalID( population -> id);
+    this -> population = population;
 
     this-> last_spike_time = - 1000;
 
@@ -46,7 +48,10 @@ void Neuron::connect(Neuron * neuron, double weight, double delay){
 
 void Neuron::handle_incoming_spikes(EvolutionContext * evo){
     // Spike processing
-    for (auto spike : this -> incoming_spikes){
+    int processed_spikes = 0;
+    Spike * spike;
+    for (int i = 0; i < this->incoming_spikes.size(); i++){
+        spike = this->incoming_spikes[i];
         if (!(spike -> processed)){
             if ((spike->arrival_time >= evo->now ) && (spike->arrival_time < evo->now + evo->dt)){
                 // Excitatory
@@ -60,12 +65,14 @@ void Neuron::handle_incoming_spikes(EvolutionContext * evo){
                     spike->processed = true;
                 }
             }
+        }else{
+            // this->incoming_spikes.erase(this->incoming_spikes.begin() + i);
         }
     }
+    cout << "pop "<< this->id->parent->local_id  << ") neuron "<<this->id->local_id << ") of the " << this->incoming_spikes.size() << " incoming spikes, " << processed_spikes << " were already processed" << endl;
 }
 
 void Neuron::evolve(EvolutionContext * evo){
-    // cout << "evolving neuron " << this->id->local_id<< endl; 
     // Gather spikes
     this-> handle_incoming_spikes(evo);
 
@@ -79,6 +86,7 @@ void Neuron::evolve(EvolutionContext * evo){
     
     // Spike generation
     if ((this -> state[0]) > this->E_thr){
+        cout << "since v was " << this->state[0] << " neuron " << this->id->local_id << " fired" << endl;
         this -> spike(evo);
     }
 }

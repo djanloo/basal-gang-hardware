@@ -15,10 +15,14 @@ class HierarchicalID{
         }
         HierarchicalID(HierarchicalID * _parent){
             //  The inner container constructor
-            this -> current_max_subclass_id = 0;
             this -> parent = _parent;
+
+            std::cout << "giving child the current max id: "<< _parent -> current_max_subclass_id << std::endl;
             this -> local_id = _parent -> current_max_subclass_id;
-            (_parent -> current_max_subclass_id) += 1;
+
+            std::cout << "increasing max subclass form " << _parent -> current_max_subclass_id << " to " << (_parent -> current_max_subclass_id) + 1 << " of ID at" << _parent << std::endl;
+            (_parent -> current_max_subclass_id) ++;
+            this -> current_max_subclass_id = 0;
         }
 
 };

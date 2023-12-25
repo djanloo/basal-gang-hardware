@@ -26,12 +26,15 @@ void free_proj_mat(double** matrix, int N) {
 }
 
 int main(){
-    int Na = 5000;
-    int Nb = 5000;
+    int Na = 10;
+    int Nb = 10;
 
     SpikingNetwork sn = SpikingNetwork();
     Population a = Population(Na, neuron_type::aqif, &sn);
     Population b = Population(Nb, neuron_type::aqif, &sn);
+
+    cout << "size of neuron is " << sizeof(*(a.neurons[0])) << " bytes" <<endl ;
+    cout << "size of population is " << sizeof(a) << " bytes" << endl;
 
     double ** weights, **delays;
 
@@ -40,7 +43,7 @@ int main(){
 
     for (int i = 0; i < Na; i ++){
         for (int j=0; j < Nb; j++){
-            if (weights[i][j] < 0.8){
+            if (weights[i][j] < 0.1){
                 weights[i][j] = 0.0;
                 delays[i][j] = 0.0;
             }
@@ -58,13 +61,20 @@ int main(){
 
 
     EvolutionContext evo = EvolutionContext(0.1);
+
+
+    for (int i = 0; i<a.neurons.size(); i++){
+        cout << a.neurons[i]->id->local_id <<endl;
+        cout << "\t" << a.neurons[i] << endl;
+    }
     
     auto start  = chrono::high_resolution_clock::now();
-    int n_steps = 100;
+    int n_steps = 10;
     for (int i=0; i < n_steps; i++){
         sn.evolve(&evo);
         cout << "spikes  a: " << a.n_spikes_last_step << endl;
         cout << "spikes  b: " << b.n_spikes_last_step << endl;
+        a.neurons[0]->state[1] += 0.5;
     }
     auto end = chrono::high_resolution_clock::now();
 

@@ -15,6 +15,7 @@ Population::Population(int n_neurons, neuron_type nt, SpikingNetwork * spiking_n
     auto start = chrono::high_resolution_clock::now();
 
     for ( int i = 0; i < n_neurons; i++){
+        cout << "iteration: " << i << endl;
         // The big switch, in Python this would be easier.
         // It's not particulary efficient but it has to be done
         // just once so nvm
@@ -22,6 +23,8 @@ Population::Population(int n_neurons, neuron_type nt, SpikingNetwork * spiking_n
         case neuron_type::dummy: neurons.push_back(new Neuron(this)); break;
         case neuron_type::aqif: neurons.push_back(new aqif_neuron(this)); break;
         };
+        cout << "added neuron "<< neurons[i]->id->local_id <<endl;
+        cout << "max value of super_id:" << this->id->current_max_subclass_id <<endl;
     }
 
     auto end = chrono::high_resolution_clock::now();
@@ -69,7 +72,7 @@ void Population::evolve(EvolutionContext * evo){
     this->n_spikes_last_step = 0;
     auto start = chrono::high_resolution_clock::now();
     for (auto neuron : this -> neurons){
-        // cout << "population called for evolution of neuron" << neuron ->id->local_id << endl;
+        cout << "population: evolving of neuron" << neuron ->id->local_id << endl;
         neuron -> evolve(evo);
     }
     auto end = chrono::high_resolution_clock::now();
