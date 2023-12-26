@@ -20,11 +20,9 @@ Population::Population(int n_neurons, neuron_type nt, SpikingNetwork * spiking_n
         // It's not particulary efficient but it has to be done
         // just once so nvm
         switch(nt){
-        case neuron_type::dummy: neurons.push_back(new Neuron(this)); break;
-        case neuron_type::aqif: neurons.push_back(new aqif_neuron(this)); break;
+        case neuron_type::dummy: new Neuron(this); break;       // remember not to push_back here
+        case neuron_type::aqif: new aqif_neuron(this); break;   // calling the constructor is enough
         };
-        cout << "added neuron "<< neurons[i]->id->local_id <<endl;
-        cout << "max value of super_id:" << this->id->current_max_subclass_id <<endl;
     }
 
     auto end = chrono::high_resolution_clock::now();
@@ -33,7 +31,7 @@ Population::Population(int n_neurons, neuron_type nt, SpikingNetwork * spiking_n
     
     // Adds itself to the spiking network populations
     (spiking_network->populations).push_back(this);
-}
+    }
 
 Projection::Projection(double ** _weights, double ** _delays, int _start_dimension, int _end_dimension){
     this -> weights = _weights;
