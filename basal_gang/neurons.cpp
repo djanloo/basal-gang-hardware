@@ -1,6 +1,7 @@
 #include <iostream>
 #include <vector>
-#include <list>
+#include <algorithm>
+// #include <list>
 #include <map>
 #include <chrono>
 
@@ -10,9 +11,17 @@
 
 using namespace std;
 
+
 void Axon::fire(EvolutionContext * evo){
-    // EFFICIENCY ALERT: this takes too much time, I know
-    ((this -> postsynaptic) -> incoming_spikes).push_back(new Spike(this->weight, (evo -> now) + this->delay));
+    // // EFFICIENCY ALERT: this takes too much time, I know
+    // ((this -> postsynaptic) -> incoming_spikes).push_back(new Spike(this->weight, (evo -> now) + this->delay));
+
+    Spike * newspike = new Spike(this->weight, evo->now + this->delay);
+    
+    auto place = lower_bound(this->postsynaptic->incoming_spikes.begin(), this->postsynaptic->incoming_spikes.end(), newspike,
+                            [](const Spike * a, const Spike * b) { return a->arrival_time < b->arrival_time;});
+
+    (this->postsynaptic->incoming_spikes).insert(place, newspike);
     return;
 }
 
@@ -47,13 +56,23 @@ void Neuron::connect(Neuron * neuron, double weight, double delay){
 }
 
 void Neuron::handle_incoming_spikes(EvolutionContext * evo){
+    // cout << "handling spikes for p." << this->id->parent->local_id << " n. " << this->id->local_id;
+    // for (auto spike : this->incoming_spikes){
+    //     cout << " ( "<<spike->weight<< " , "<< spike->arrival_time << " ms ) " << " --- ";
+    // } 
+    // cout << endl;
 
+    auto spike_it = this->incoming_spikes.begin();
     Spike * spike;
-    vector<int> processed;
 
-    for (int i = 0; i < this->incoming_spikes.size(); i++){
-        spike = this->incoming_spikes[i];
+    while (spike_it != (this->incoming_spikes).end()){
+        
+        spike = *(spike_it);
+
+        if ((spike->arrival_time < evo->now)&(!spike->processed)){cout << "ERROR: spike missed" << endl;} 
+
         if (!(spike -> processed)){
+
             if ((spike->arrival_time >= evo->now ) && (spike->arrival_time < evo->now + evo->dt)){
                 // Excitatory
                 if (spike->weight > 0.0){ this->state[1] += spike->weight;} 
@@ -65,23 +84,22 @@ void Neuron::handle_incoming_spikes(EvolutionContext * evo){
                     cout << "\tweight is " << spike->weight<< endl; 
                 }
                 spike->processed = true;
-                processed.push_back(i);
+
+                // Removes the spike from the incoming spikes
+                spike_it = this->incoming_spikes.erase(spike_it);
+                // cout << "processed (" <<  spike->weight << " , " << spike->arrival_time << " ms ) since now it's" << evo->now <<endl;
+            } else {
+                break;
             }
         }else{
             cout << "spike already processed" << endl;
-            // this->incoming_spikes.erase(this->incoming_spikes.begin() + i);
         }
-    }
-
-    for (auto removable_spike : processed){
-        
     }
 }
 
 void Neuron::evolve(EvolutionContext * evo){
     // Gather spikes
     this-> handle_incoming_spikes(evo);
-
     // Sub-threshold evolution
     if ( (evo->now) > (this->last_spike_time) + (this->tau_refrac) ){
         this-> evolve_state(evo);
@@ -92,7 +110,6 @@ void Neuron::evolve(EvolutionContext * evo){
     
     // Spike generation
     if ((this -> state[0]) > this->E_thr){
-        cout << "since v was " << this->state[0] << " neuron " << this->id->local_id << " fired" << endl;
         this -> spike(evo);
     }
 }

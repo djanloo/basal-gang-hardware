@@ -7,6 +7,8 @@
 #include "base_objects.hpp"
 #include "neurons.hpp"
 
+#define WEIGHT_EPS 0.00001
+
 class Projection;
 class Population;
 class SpikingNetwork;
@@ -18,7 +20,6 @@ class Projection{
 
         Projection(double ** weights, double ** delays, int start_dimension, int end_dimension);
 };
-
 
 class Population{
     public:
@@ -33,7 +34,6 @@ class Population{
         void project(Projection * projection, Population * child_pop);
         void evolve(EvolutionContext * evo);
 };
-
 
 class SpikingNetwork{
     public:

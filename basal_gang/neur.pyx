@@ -9,14 +9,14 @@ cdef extern from "base_objects.hpp":
     cdef cppclass EvolutionContext:
         double dt
         double now
-        EvolutionContext()
+        EvolutionContext(double _dt)
 
     cdef cppclass HierarchicalID:
         pass
 
 cdef extern from "neurons.hpp":
     cdef cppclass neuron_type:
-        pass
+        pass        
 
 cdef extern from "neurons.hpp" namespace "neuron_type":
     cdef neuron_type dummy
@@ -63,7 +63,13 @@ cdef class PyProjection():
 cdef extern from "network.hpp":
     cdef cppclass Population:
         int n_neurons
-        Population(int n_neurons, neuron_type nt, HierarchicalID * spikenet_id)
+        HierarchicalID * id
+
+        int n_spikes_last_step
+
+        Population(int n_neurons, neuron_type nt, SpikingNetwork * spiking_network)
+        void project(Projection * projection, Population * child_pop)
+        void evolve(EvolutionContext * evo)
 
 cdef class PyPopulation:
 
@@ -72,11 +78,19 @@ cdef class PyPopulation:
 
     def __cinit__(self, int n_neurons, str poptype, PySpikingNetwork spikenet):
         self._nt = <neuron_type><int>NEURON_TYPES[poptype]
-        self._population = new Population(<int>n_neurons, self._nt, &spikenet._spiking_network.id)
+        self._population = new Population(<int>n_neurons, self._nt, spikenet._spiking_network)
 
     @property
     def n_neurons(self):
         return self._population.n_neurons
+
+    @property
+    def n_spikes_last_step(self):
+        return self._population.n_spikes_last_step
+
+    def project(self, PyProjection proj, PyPopulation efferent_pop):
+        self._population.project(proj._projection, efferent_pop._population)
+
 
     def __dealloc__(self):
         if self._population != NULL:
@@ -85,17 +99,59 @@ cdef class PyPopulation:
 
 cdef extern from "network.hpp":
     cdef cppclass SpikingNetwork:
-        HierarchicalID id
-        void add_population(Population * pop)
-        run(EvolutionContext * evo, double time) 
+        HierarchicalID * id
+        SpikingNetwork()
+        void run(EvolutionContext * evo, double time)
 
 cdef class PySpikingNetwork:
 
     cdef SpikingNetwork * _spiking_network
+    cdef EvolutionContext * evo
     cdef str name
     def __cinit__(self, str name):
         self._spiking_network = new SpikingNetwork()
         self.name = name
 
-    cdef add_population(self, PyPopulation pypop):
-        (self._spiking_network).add_population( pypop._population )
+    def run(self, dt=0.1, time=1):
+        self.evo = new EvolutionContext(dt)
+        self._spiking_network.run(self.evo, time)
+
+
+class RandomProjector:
+
+    def __init__(self,  inh_fraction=0.1, exc_fraction=0.1, 
+                        max_inh = 0.1, max_exc=0.1, 
+                        min_delay=0.1, max_delay=0.5):
+        assert max_inh > 0, "AAAAA"
+        self.max_inh = max_inh
+        self.max_exc = max_exc
+        self.exc_fraction = exc_fraction
+        self.inh_fraction = inh_fraction
+        self.min_delay = min_delay
+        self.max_delay = max_delay
+
+    def get_projection(self, PyPopulation pop1, PyPopulation pop2):
+
+        N, M = pop1.n_neurons, pop2.n_neurons
+
+        active_inh_syn = (np.random.uniform(0,1, size=(N,M)) < self.inh_fraction)
+        active_exc_syn = (np.random.uniform(0,1, size=(N,M)) < self.inh_fraction)
+
+        weights = np.zeros((N,M))
+        delays = np.zeros((N,M))
+
+        for i in range(N):
+            for j in range(M):
+                if active_inh_syn[i,j]:
+                    weights[i,j] = np.random.uniform(0,self.max_inh)
+                    delays[i,j] = np.random.uniform(self.min_delay, self.max_delay)
+                elif active_exc_syn[i,j]:
+                    weights[i,j] = np.random.uniform(0, self.max_exc)
+                    delays[i,j] = np.random.uniform(self.min_delay, self.max_delay)
+
+ 
+        self.last_weights = weights
+        self.last_delays = delays
+
+        self.last_projection = PyProjection(weights, delays)
+        return self.last_projection

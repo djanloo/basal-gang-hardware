@@ -1,8 +1,12 @@
 #include <iostream>
+#include <fstream>
 
 #include "base_objects.hpp"
 #include "neurons.hpp"
 #include "network.hpp"
+
+// ulimit -c unlimited
+// sudo sysctl -w kernel.core_pattern=/tmp/core-%e.%p.%h.%t
 
 double rand_01(){
     return ((double)rand())/RAND_MAX;
@@ -30,8 +34,14 @@ void free_proj_mat(double** matrix, int N) {
 }
 
 int main(){
-    int Na = 10;
-    int Nb = 10;
+    int Na = 5000;
+    int Nb = 5000;
+
+
+    ofstream file("v_trace.txt");
+    if (!file.is_open()){
+        return -1;
+    }
 
     SpikingNetwork sn = SpikingNetwork();
     Population a = Population(Na, neuron_type::aqif, &sn);
@@ -42,30 +52,16 @@ int main(){
 
     double ** weights, **delays;
 
-    weights = get_rand_proj_mat(Na, Nb, -1,1);
+    weights = get_rand_proj_mat(Na,Nb, -0.01,0.03);
     delays = get_rand_proj_mat(Na,Nb, 0.2, 0.8);
 
-     cout << "MAin: printing weights:" <<endl;
-
     for (int i = 0; i < Na; i ++){
         for (int j=0; j < Nb; j++){
-            cout << "(" << i << j <<")" <<weights[i][j] << "\t";
-        }
-        cout << endl;
-    }
-
-    cout << "Main: printing delays:" <<endl;
-
-    for (int i = 0; i < Na; i ++){
-        for (int j=0; j < Nb; j++){
-            cout << "(" << i << j <<")" <<weights[i][j] << "\t";   
-        }
-        cout << endl;
-    }
-
-    for (int i = 0; i < Na; i ++){
-        for (int j=0; j < Nb; j++){
-            if (abs(weights[i][j]) < 0.1){
+            if (rand_01() > 0.2){
+                weights[i][j] = 0.0;
+                delays[i][j] = 0.0;
+            }
+            if (abs(weights[i][j]) < WEIGHT_EPS){
                 weights[i][j] = 0.0;
                 delays[i][j] = 0.0;
             }
@@ -87,18 +83,29 @@ int main(){
     
     auto start  = chrono::high_resolution_clock::now();
     int n_steps = 50;
+
+
     for (int i=0; i < n_steps; i++){
+        cout << "--------- time " << evo.now << "---------------"<<endl;
         sn.evolve(&evo);
         cout << "spikes  a: " << a.n_spikes_last_step << endl;
         cout << "spikes  b: " << b.n_spikes_last_step << endl;
-        a.neurons[0]->state[1] += 0.5;
-        a.neurons[1]->state[1] += 0.5;
-        a.neurons[2]->state[1] += 0.5;
-        a.neurons[3]->state[1] += 0.5;
+        if (evo.now < 0.5){
+            a.neurons[0]->state[1] += 0.1;
+            a.neurons[1]->state[1] += 0.1;
+            a.neurons[2]->state[1] += 0.1;
+            a.neurons[3]->state[1] += 0.1;
+        }
+
+        file << evo.now << "\t";
+        for (auto statevar : a.neurons[0] -> state ){
+            file << statevar << "\t";
+        }
+        file << endl;
     }
     auto end = chrono::high_resolution_clock::now();
 
-    cout << "simulation took " << (chrono::duration_cast<chrono::seconds>(end -start)).count() << " ms";
-    cout << "\t(" << ((double)(chrono::duration_cast<chrono::seconds>(end -start)).count())/n_steps << " ms/step)" << endl;
+    cout << "simulation took " << (chrono::duration_cast<chrono::seconds>(end -start)).count() << " s";
+    cout << "\t(" << ((double)(chrono::duration_cast<chrono::seconds>(end -start)).count())/n_steps << " s/step)" << endl;
 }
 

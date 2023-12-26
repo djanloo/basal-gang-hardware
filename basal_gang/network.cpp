@@ -7,8 +7,6 @@
 #include "neurons.hpp"
 #include "network.hpp"
 
-#define WEIGHT_EPS 0.00001
-
 Population::Population(int n_neurons, neuron_type nt, SpikingNetwork * spiking_network){
     this -> n_neurons = n_neurons;
     this -> n_spikes_last_step = 0;
@@ -49,23 +47,23 @@ Projection::Projection(double ** _weights, double ** _delays, int _start_dimensi
         }
     }
 
-     cout << "Projection: printing weights:" <<endl;
+    //  cout << "Projection: printing weights:" <<endl;
 
-    for (int i = 0; i < _start_dimension; i ++){
-        for (int j=0; j < _end_dimension; j++){
-            cout << weights[i][j] << "\t";
-        }
-        cout << endl;
-    }
+    // for (int i = 0; i < _start_dimension; i ++){
+    //     for (int j=0; j < _end_dimension; j++){
+    //         cout << weights[i][j] << "\t";
+    //     }
+    //     cout << endl;
+    // }
 
-    cout << "Projection: printing delays:" <<endl;
+    // cout << "Projection: printing delays:" <<endl;
 
-    for (int i = 0; i < _start_dimension; i ++){
-        for (int j=0; j < _end_dimension; j++){
-            cout << delays[i][j] << "\t";
-        }
-        cout << endl;
-    }
+    // for (int i = 0; i < _start_dimension; i ++){
+    //     for (int j=0; j < _end_dimension; j++){
+    //         cout << delays[i][j] << "\t";
+    //     }
+    //     cout << endl;
+    // }
     cout << "projection has density "<< ((float)n_links)/_start_dimension/_end_dimension * 100 << "%" << endl;
 }
 
@@ -86,6 +84,14 @@ void Population::project(Projection * projection, Population * efferent_populati
 }
 
 void Population::evolve(EvolutionContext * evo){
+
+    double avg_synaptic_queue_size = 0;
+    for (auto neuron : this->neurons){
+        avg_synaptic_queue_size += neuron -> incoming_spikes.size();
+    }
+    avg_synaptic_queue_size /= this->n_neurons;
+    cout << "average synaptic queue is long " << avg_synaptic_queue_size << endl;
+
     this->n_spikes_last_step = 0;
     auto start = chrono::high_resolution_clock::now();
     for (auto neuron : this -> neurons){
@@ -93,7 +99,7 @@ void Population::evolve(EvolutionContext * evo){
     }
     auto end = chrono::high_resolution_clock::now();
     cout << "evolving population " << this->id->local_id << " took " << ((double)(chrono::duration_cast<chrono::microseconds>(end-start)).count())/this->n_neurons;
-    cout << " us/neur" << endl;  
+    cout << " us/neur" << endl;
 }
 
 void  SpikingNetwork::evolve(EvolutionContext * evo){

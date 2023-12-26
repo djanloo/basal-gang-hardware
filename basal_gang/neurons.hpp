@@ -8,24 +8,33 @@ using namespace std;
 
 enum class neuron_type : unsigned int {dummy, aqif};
 
+class Spike;
 class Axon;
 class Neuron;
 class Population;
 class Projection;
 
+class Spike{
+    public:
+        Spike(double weight, double arrival_time): weight(weight), arrival_time(arrival_time){
+            this -> processed = false;
+        }
+        bool processed;
+        double weight, arrival_time;        
+};
+
 class Axon{
     public:
+        Axon(Neuron * presynaptic, Neuron * postsynaptic, double weight, double delay):
+            presynaptic(presynaptic),postsynaptic(postsynaptic),
+            weight(weight), delay(delay){}
+            
+        void fire(EvolutionContext * evo);
+    private:
         Neuron * presynaptic;
         Neuron * postsynaptic;
         double weight, delay;
 
-        Axon(Neuron * _presynaptic, Neuron * _postsynaptic, double _weight, double _delay){
-            this -> presynaptic = _presynaptic;
-            this -> postsynaptic = _postsynaptic;
-            this -> weight = _weight;
-            this -> delay = _delay;
-        }
-        void fire(EvolutionContext * evo);
 };
 
 class Neuron{
@@ -38,7 +47,7 @@ class Neuron{
 
         // Physiological properties
         float tau_refrac, tau_e, tau_i, tau_m;
-        double E_exc, E_inh, E_rest, E_thr;
+        float E_exc, E_inh, E_rest, E_thr;
 
         // Spike stuff
         vector<Axon*> efferent_axons;

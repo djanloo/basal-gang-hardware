@@ -36,15 +36,3 @@ class EvolutionContext{
             this -> now += this -> dt;
         }
 };
-
-class Spike{
-    public:
-        double weight, arrival_time;
-        bool processed;
-        // Remember to deallocate once you're done with me !
-        Spike(double _weight, double _arrival_time){
-            this -> weight = _weight;
-            this -> arrival_time = _arrival_time;
-            this -> processed = false;
-        }
-};
