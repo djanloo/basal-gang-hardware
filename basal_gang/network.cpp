@@ -7,6 +7,8 @@
 #include "neurons.hpp"
 #include "network.hpp"
 
+#define WEIGHT_EPS 0.00001
+
 Population::Population(int n_neurons, neuron_type nt, SpikingNetwork * spiking_network){
     this -> n_neurons = n_neurons;
     this -> n_spikes_last_step = 0;
@@ -15,7 +17,6 @@ Population::Population(int n_neurons, neuron_type nt, SpikingNetwork * spiking_n
     auto start = chrono::high_resolution_clock::now();
 
     for ( int i = 0; i < n_neurons; i++){
-        cout << "iteration: " << i << endl;
         // The big switch, in Python this would be easier.
         // It's not particulary efficient but it has to be done
         // just once so nvm
@@ -47,6 +48,24 @@ Projection::Projection(double ** _weights, double ** _delays, int _start_dimensi
             }
         }
     }
+
+     cout << "Projection: printing weights:" <<endl;
+
+    for (int i = 0; i < _start_dimension; i ++){
+        for (int j=0; j < _end_dimension; j++){
+            cout << weights[i][j] << "\t";
+        }
+        cout << endl;
+    }
+
+    cout << "Projection: printing delays:" <<endl;
+
+    for (int i = 0; i < _start_dimension; i ++){
+        for (int j=0; j < _end_dimension; j++){
+            cout << delays[i][j] << "\t";
+        }
+        cout << endl;
+    }
     cout << "projection has density "<< ((float)n_links)/_start_dimension/_end_dimension * 100 << "%" << endl;
 }
 
@@ -55,7 +74,7 @@ void Population::project(Projection * projection, Population * efferent_populati
     auto start = chrono::high_resolution_clock::now();
     for (int i = 0; i < projection -> start_dimension; i++){
         for (int j = 0; j < projection -> end_dimension; j++){
-            if ((projection -> weights)[i][j] != 0.0){
+            if (abs((projection -> weights)[i][j]) > WEIGHT_EPS){
                 connections ++;
                 (this -> neurons)[i] -> connect(efferent_population -> neurons[j], (projection -> weights)[i][j], (projection -> delays)[i][j]);
             }
@@ -70,7 +89,6 @@ void Population::evolve(EvolutionContext * evo){
     this->n_spikes_last_step = 0;
     auto start = chrono::high_resolution_clock::now();
     for (auto neuron : this -> neurons){
-        cout << "population: evolving of neuron" << neuron ->id->local_id << endl;
         neuron -> evolve(evo);
     }
     auto end = chrono::high_resolution_clock::now();

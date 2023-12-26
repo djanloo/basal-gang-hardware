@@ -47,29 +47,35 @@ void Neuron::connect(Neuron * neuron, double weight, double delay){
 }
 
 void Neuron::handle_incoming_spikes(EvolutionContext * evo){
-    // Spike processing
-    int processed_spikes = 0;
+
     Spike * spike;
+    vector<int> processed;
+
     for (int i = 0; i < this->incoming_spikes.size(); i++){
         spike = this->incoming_spikes[i];
         if (!(spike -> processed)){
             if ((spike->arrival_time >= evo->now ) && (spike->arrival_time < evo->now + evo->dt)){
                 // Excitatory
-                if (spike->weight > 0.0){ 
-                    this->state[1] += spike->weight; 
-                    spike->processed = true;
-                } 
+                if (spike->weight > 0.0){ this->state[1] += spike->weight;} 
                 // Inhibitory
-                if (spike->weight < 0.0){ 
-                    this->state[2] -= spike->weight; 
-                    spike->processed = true;
+                else if (spike->weight < 0.0){ this->state[2] -= spike->weight;}
+                // Spurious zero-weight
+                else{
+                    cout << "Warning: a zero-weighted spike was received" << endl;
+                    cout << "\tweight is " << spike->weight<< endl; 
                 }
+                spike->processed = true;
+                processed.push_back(i);
             }
         }else{
+            cout << "spike already processed" << endl;
             // this->incoming_spikes.erase(this->incoming_spikes.begin() + i);
         }
     }
-    cout << "pop "<< this->id->parent->local_id  << ") neuron "<<this->id->local_id << ") of the " << this->incoming_spikes.size() << " incoming spikes, " << processed_spikes << " were already processed" << endl;
+
+    for (auto removable_spike : processed){
+        
+    }
 }
 
 void Neuron::evolve(EvolutionContext * evo){
@@ -104,13 +110,11 @@ void Neuron::spike(EvolutionContext * evo){
 // *************************** More detailed models ************************ //
 
 void aqif_neuron::evolve_state(EvolutionContext * evo){
-    // cout << "calling evolve_state" << endl;
     // Membrane decay
     this->state[0] -= ( this->state[0] - this->E_rest) * evo->dt / this->tau_m;
     // Synaptic currents
     this -> state [0] -= evo -> dt * (this -> state [1])*( this -> state[0] - this -> E_exc);
     this -> state [0] -= evo -> dt * (this -> state [2])*( this -> state[0] - this -> E_inh);
-
 }
 
 void aqif_neuron::evolve_synapses(EvolutionContext * evo){

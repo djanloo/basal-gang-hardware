@@ -4,7 +4,11 @@
 #include "neurons.hpp"
 #include "network.hpp"
 
-double ** get_rand_proj_mat(int N, int M){
+double rand_01(){
+    return ((double)rand())/RAND_MAX;
+}
+
+double ** get_rand_proj_mat(int N, int M, double min, double max){
     double** matrix = new double*[N];
     for (int i = 0; i < N; ++i) {
         matrix[i] = new double[M];
@@ -12,7 +16,7 @@ double ** get_rand_proj_mat(int N, int M){
 
     for (int i=0;i<N;i++){
         for (int j=0; j< M; j++){
-            matrix[i][j] = 2*(((double) rand())/RAND_MAX - 0.5);
+            matrix[i][j] = min + (max-min)*rand_01();
         }
     }
     return matrix;
@@ -38,17 +42,36 @@ int main(){
 
     double ** weights, **delays;
 
-    weights = get_rand_proj_mat(Na, Nb);
-    delays = get_rand_proj_mat(Na,Nb);
+    weights = get_rand_proj_mat(Na, Nb, -1,1);
+    delays = get_rand_proj_mat(Na,Nb, 0.2, 0.8);
+
+     cout << "MAin: printing weights:" <<endl;
 
     for (int i = 0; i < Na; i ++){
         for (int j=0; j < Nb; j++){
-            if (weights[i][j] < 0.1){
+            cout << "(" << i << j <<")" <<weights[i][j] << "\t";
+        }
+        cout << endl;
+    }
+
+    cout << "Main: printing delays:" <<endl;
+
+    for (int i = 0; i < Na; i ++){
+        for (int j=0; j < Nb; j++){
+            cout << "(" << i << j <<")" <<weights[i][j] << "\t";   
+        }
+        cout << endl;
+    }
+
+    for (int i = 0; i < Na; i ++){
+        for (int j=0; j < Nb; j++){
+            if (abs(weights[i][j]) < 0.1){
                 weights[i][j] = 0.0;
                 delays[i][j] = 0.0;
             }
         }
     }
+
 
     Projection * projection = new Projection(weights, delays, Na, Nb);
 
@@ -61,20 +84,17 @@ int main(){
 
 
     EvolutionContext evo = EvolutionContext(0.1);
-
-
-    for (int i = 0; i<a.neurons.size(); i++){
-        cout << a.neurons[i]->id->local_id <<endl;
-        cout << "\t" << a.neurons[i] << endl;
-    }
     
     auto start  = chrono::high_resolution_clock::now();
-    int n_steps = 10;
+    int n_steps = 50;
     for (int i=0; i < n_steps; i++){
         sn.evolve(&evo);
         cout << "spikes  a: " << a.n_spikes_last_step << endl;
         cout << "spikes  b: " << b.n_spikes_last_step << endl;
         a.neurons[0]->state[1] += 0.5;
+        a.neurons[1]->state[1] += 0.5;
+        a.neurons[2]->state[1] += 0.5;
+        a.neurons[3]->state[1] += 0.5;
     }
     auto end = chrono::high_resolution_clock::now();
 
