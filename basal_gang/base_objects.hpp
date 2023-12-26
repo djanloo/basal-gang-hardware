@@ -7,18 +7,12 @@ class HierarchicalID{
         unsigned int local_id;
         unsigned int current_max_subclass_id;
 
-        HierarchicalID(){
-            // The outer constructor
-            this -> parent = NULL;
-            this -> local_id = -1;
-            this -> current_max_subclass_id = 0;
-        }
-        HierarchicalID(HierarchicalID * _parent){
+        HierarchicalID():parent(NULL),local_id(-1),current_max_subclass_id(0){}
+        HierarchicalID(HierarchicalID * parent): parent(parent){
             //  The inner container constructor
-            this -> parent = _parent;
-            this -> local_id = _parent -> current_max_subclass_id;
-            (_parent -> current_max_subclass_id) ++;
-            this -> current_max_subclass_id = 0;
+            this->local_id = this->parent->current_max_subclass_id;
+            this->parent->current_max_subclass_id ++;
+            this->current_max_subclass_id = 0;
         }
 
 };

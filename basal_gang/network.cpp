@@ -98,8 +98,9 @@ void Population::evolve(EvolutionContext * evo){
         neuron -> evolve(evo);
     }
     auto end = chrono::high_resolution_clock::now();
-    cout << "evolving population " << this->id->local_id << " took " << ((double)(chrono::duration_cast<chrono::microseconds>(end-start)).count())/this->n_neurons;
-    cout << " us/neur" << endl;
+    cout << "evolving population " << this->id->local_id << " took " << ((double)(chrono::duration_cast<chrono::milliseconds>(end-start)).count()) << " ms (";
+    cout << ((double)(chrono::duration_cast<chrono::microseconds>(end-start)).count())/this->n_neurons;
+    cout << " us/neur )" << endl;
 }
 
 void  SpikingNetwork::evolve(EvolutionContext * evo){

@@ -35,8 +35,12 @@ cdef class PyProjection():
     cdef double ** _weights
     cdef double ** _delays 
     cdef Projection * _projection
-    
+
+    cdef double [:,:] weights, delays
+
     def __cinit__(self,  np.ndarray[np.double_t,ndim=2,mode='c'] weights, np.ndarray[np.double_t,ndim=2,mode='c'] delays):
+        self.weights = weights
+        self.delays = delays
 
         self.start_dimension = weights.shape[0]
         self.end_dimension   = weights.shape[1]
@@ -59,6 +63,13 @@ cdef class PyProjection():
                                             <double**> &self._delays[0], 
                                             self.start_dimension, 
                                             self.end_dimension)
+    @property
+    def weights(self):
+        return self.weights
+    
+    @property
+    def delays(self):
+        return self.delays
 
 cdef extern from "network.hpp":
     cdef cppclass Population:
@@ -108,6 +119,7 @@ cdef class PySpikingNetwork:
     cdef SpikingNetwork * _spiking_network
     cdef EvolutionContext * evo
     cdef str name
+
     def __cinit__(self, str name):
         self._spiking_network = new SpikingNetwork()
         self.name = name
@@ -135,7 +147,7 @@ class RandomProjector:
         N, M = pop1.n_neurons, pop2.n_neurons
 
         active_inh_syn = (np.random.uniform(0,1, size=(N,M)) < self.inh_fraction)
-        active_exc_syn = (np.random.uniform(0,1, size=(N,M)) < self.inh_fraction)
+        active_exc_syn = (np.random.uniform(0,1, size=(N,M)) < self.exc_fraction)
 
         weights = np.zeros((N,M))
         delays = np.zeros((N,M))
@@ -143,7 +155,7 @@ class RandomProjector:
         for i in range(N):
             for j in range(M):
                 if active_inh_syn[i,j]:
-                    weights[i,j] = np.random.uniform(0,self.max_inh)
+                    weights[i,j] = -np.random.uniform(0,self.max_inh)
                     delays[i,j] = np.random.uniform(self.min_delay, self.max_delay)
                 elif active_exc_syn[i,j]:
                     weights[i,j] = np.random.uniform(0, self.max_exc)
