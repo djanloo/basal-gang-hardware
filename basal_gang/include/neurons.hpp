@@ -10,7 +10,7 @@ using namespace std;
 enum class neuron_type : unsigned int {dummy, aqif};
 
 class Spike;
-class Axon;
+class Synapse;
 class Neuron;
 class Population;
 class Projection;
@@ -30,9 +30,9 @@ struct CompareSpike {
     }
 };
 
-class Axon{
+class Synapse{
     public:
-        Axon(Neuron * presynaptic, Neuron * postsynaptic, double weight, double delay):
+        Synapse(Neuron * presynaptic, Neuron * postsynaptic, double weight, double delay):
             presynaptic(presynaptic),postsynaptic(postsynaptic),
             weight(weight), delay(delay){}
             
@@ -57,7 +57,7 @@ class Neuron{
         float E_exc, E_inh, E_rest, E_thr;
 
         // Spike stuff
-        vector<Axon*> efferent_axons;
+        vector<Synapse*> efferent_synapses;
         priority_queue<Spike*, vector<Spike *>, CompareSpike> incoming_spikes;
         double last_spike_time;
 

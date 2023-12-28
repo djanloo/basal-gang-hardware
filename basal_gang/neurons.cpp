@@ -13,7 +13,7 @@
 using namespace std;
 
 
-void Axon::fire(EvolutionContext * evo){
+void Synapse::fire(EvolutionContext * evo){
     Spike * newspike = new Spike(this->weight, evo->now + this->delay);
     this->postsynaptic->incoming_spikes.push(newspike);
     return;
@@ -33,7 +33,7 @@ Neuron::Neuron(Population * population){
     this->tau_e = 5;
     this->tau_m = 15;
 
-    this -> state = vector<double> {  this -> E_rest + ((double)rand())/RAND_MAX, 0.0, 0.0};
+    this -> state = vector<double> { this -> E_rest + ((double)rand())/RAND_MAX, 0.0, 0.0};
 
 
     this -> id = new HierarchicalID( population -> id);
@@ -46,7 +46,7 @@ Neuron::Neuron(Population * population){
 };
 
 void Neuron::connect(Neuron * neuron, double weight, double delay){
-    (this -> efferent_axons).push_back(new Axon(this, neuron, weight, delay));
+    (this -> efferent_synapses).push_back(new Synapse(this, neuron, weight, delay));
 }
 
 void Neuron::handle_incoming_spikes(EvolutionContext * evo){
@@ -109,8 +109,8 @@ void Neuron::evolve(EvolutionContext * evo){
 }
 
 void Neuron::spike(EvolutionContext * evo){
-    for (auto axon : this->efferent_axons){
-        (*axon).fire(evo);
+    for (auto synapse : this->efferent_synapses){
+        (*synapse).fire(evo);
     }
     this -> last_spike_time = evo -> now;
     this -> state[0] = this->E_rest;
