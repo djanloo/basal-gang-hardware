@@ -1,9 +1,9 @@
 #include <iostream>
 #include <fstream>
 
-#include "base_objects.hpp"
-#include "neurons.hpp"
-#include "network.hpp"
+#include "include/base_objects.hpp"
+#include "include/neurons.hpp"
+#include "include/network.hpp"
 
 // ulimit -c unlimited
 // sudo sysctl -w kernel.core_pattern=/tmp/core-%e.%p.%h.%t
@@ -34,8 +34,8 @@ void free_proj_mat(double** matrix, int N) {
 }
 
 int main(){
-    int Na = 5000;
-    int Nb = 5000;
+    int Na = 1000;
+    int Nb = 1000;
 
 
     ofstream file("v_trace.txt");
@@ -52,12 +52,12 @@ int main(){
 
     double ** weights, **delays;
 
-    weights = get_rand_proj_mat(Na,Nb, -0.01,0.03);
-    delays = get_rand_proj_mat(Na,Nb, 0.2, 0.8);
+    weights = get_rand_proj_mat(Na,Nb, -0.02,0.08);
+    delays = get_rand_proj_mat(Na,Nb, 0.5, 1.0);
 
     for (int i = 0; i < Na; i ++){
         for (int j=0; j < Nb; j++){
-            if (rand_01() > 0.2){
+            if (rand_01() > 0.1){
                 weights[i][j] = 0.0;
                 delays[i][j] = 0.0;
             }
@@ -82,7 +82,7 @@ int main(){
     EvolutionContext evo = EvolutionContext(0.1);
     
     auto start  = chrono::high_resolution_clock::now();
-    int n_steps = 50;
+    int n_steps = 100;
 
 
     for (int i=0; i < n_steps; i++){

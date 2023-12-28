@@ -2,26 +2,20 @@
 #include <vector>
 #include <algorithm>
 // #include <list>
-#include <map>
+// #include <map>
+#include <queue>
 #include <chrono>
 
-#include "base_objects.hpp"
-#include "neurons.hpp"
-#include "network.hpp"
+#include "include/base_objects.hpp"
+#include "include/neurons.hpp"
+#include "include/network.hpp"
 
 using namespace std;
 
 
 void Axon::fire(EvolutionContext * evo){
-    // // EFFICIENCY ALERT: this takes too much time, I know
-    // ((this -> postsynaptic) -> incoming_spikes).push_back(new Spike(this->weight, (evo -> now) + this->delay));
-
     Spike * newspike = new Spike(this->weight, evo->now + this->delay);
-    
-    auto place = lower_bound(this->postsynaptic->incoming_spikes.begin(), this->postsynaptic->incoming_spikes.end(), newspike,
-                            [](const Spike * a, const Spike * b) { return a->arrival_time < b->arrival_time;});
-
-    (this->postsynaptic->incoming_spikes).insert(place, newspike);
+    this->postsynaptic->incoming_spikes.push(newspike);
     return;
 }
 
@@ -62,12 +56,11 @@ void Neuron::handle_incoming_spikes(EvolutionContext * evo){
     // } 
     // cout << endl;
 
-    auto spike_it = this->incoming_spikes.begin();
     Spike * spike;
-
-    while (spike_it != (this->incoming_spikes).end()){
+    // cout <<  this->id->local_id << ") spike queue is long "<< this->incoming_spikes.size() << endl;
+    while (!(this->incoming_spikes.empty())){
         
-        spike = *(spike_it);
+        spike = this->incoming_spikes.top();
 
         if ((spike->arrival_time < evo->now)&(!spike->processed)){cout << "ERROR: spike missed" << endl;} 
 
@@ -86,9 +79,10 @@ void Neuron::handle_incoming_spikes(EvolutionContext * evo){
                 spike->processed = true;
 
                 // Removes the spike from the incoming spikes
-                spike_it = this->incoming_spikes.erase(spike_it);
-                // cout << "processed (" <<  spike->weight << " , " << spike->arrival_time << " ms ) since now it's" << evo->now <<endl;
+                this->incoming_spikes.pop();
+                // cout << this->id->local_id << ")processed (" <<  spike->weight << " , " << spike->arrival_time << " ms ) since now it's" << evo->now <<endl;
             } else {
+                // cout << this->id->local_id << ")spike (" <<  spike->weight << " , " << spike->arrival_time << " ms ) not processed because now it's " << evo->now<<endl;
                 break;
             }
         }else{

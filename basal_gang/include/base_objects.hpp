@@ -14,7 +14,6 @@ class HierarchicalID{
             this->parent->current_max_subclass_id ++;
             this->current_max_subclass_id = 0;
         }
-
 };
 
 class EvolutionContext{

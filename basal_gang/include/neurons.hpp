@@ -2,6 +2,7 @@
 #include <iostream>
 #include <vector>
 #include <list>
+#include <queue>
 #include "base_objects.hpp"
 
 using namespace std;
@@ -21,6 +22,12 @@ class Spike{
         }
         bool processed;
         double weight, arrival_time;        
+};
+
+struct CompareSpike {
+    bool operator()(const Spike * spike1, const Spike * spike2) const {
+        return spike1->arrival_time > spike2->arrival_time;
+    }
 };
 
 class Axon{
@@ -51,7 +58,7 @@ class Neuron{
 
         // Spike stuff
         vector<Axon*> efferent_axons;
-        vector<Spike*> incoming_spikes;
+        priority_queue<Spike*, vector<Spike *>, CompareSpike> incoming_spikes;
         double last_spike_time;
 
         // Yeah I know, not beautiful but think about it

@@ -3,9 +3,9 @@
 #include <map>
 #include <chrono>
 
-#include "base_objects.hpp"
-#include "neurons.hpp"
-#include "network.hpp"
+#include "include/base_objects.hpp"
+#include "include/neurons.hpp"
+#include "include/network.hpp"
 
 Population::Population(int n_neurons, neuron_type nt, SpikingNetwork * spiking_network){
     this -> n_neurons = n_neurons;
@@ -90,7 +90,7 @@ void Population::evolve(EvolutionContext * evo){
         avg_synaptic_queue_size += neuron -> incoming_spikes.size();
     }
     avg_synaptic_queue_size /= this->n_neurons;
-    cout << "average synaptic queue is long " << avg_synaptic_queue_size << endl;
+    cout << "pop " << this->id->local_id << ") average synaptic queue is long " << avg_synaptic_queue_size << endl;
 
     this->n_spikes_last_step = 0;
     auto start = chrono::high_resolution_clock::now();
@@ -98,7 +98,7 @@ void Population::evolve(EvolutionContext * evo){
         neuron -> evolve(evo);
     }
     auto end = chrono::high_resolution_clock::now();
-    cout << "evolving population " << this->id->local_id << " took " << ((double)(chrono::duration_cast<chrono::milliseconds>(end-start)).count()) << " ms (";
+    cout << "pop " <<this->id->local_id << ") evolving took " << ((double)(chrono::duration_cast<chrono::milliseconds>(end-start)).count()) << " ms (";
     cout << ((double)(chrono::duration_cast<chrono::microseconds>(end-start)).count())/this->n_neurons;
     cout << " us/neur )" << endl;
 }
