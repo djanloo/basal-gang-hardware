@@ -131,7 +131,7 @@ cdef class PySpikingNetwork:
 
 class RandomProjector:
 
-    def __init__(self,  inh_fraction=0.1, exc_fraction=0.1, 
+    def __init__(self,  inh_fraction=0.0, exc_fraction=0.0, 
                         max_inh = 0.1, max_exc=0.1, 
                         min_delay=0.1, max_delay=0.5):
         assert max_inh > 0, "AAAAA"
