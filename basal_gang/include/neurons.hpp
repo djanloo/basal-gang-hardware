@@ -68,6 +68,9 @@ class Neuron{
         void handle_incoming_spikes(EvolutionContext * evo);
         void spike(EvolutionContext * evo);
         void evolve(EvolutionContext * evo);
+        vector<double> monitor(){
+            return this->state;
+        };
 
         // These must be implemented for each specific neuron
         virtual void evolve_state(EvolutionContext * evo){cout << "WARNING: using virtual evolve_state of <Neuron>";};
@@ -75,6 +78,7 @@ class Neuron{
 };
 
 
+/*------------------- MORE DETAILED NEURONS ------------------*/
 class aqif_neuron : public Neuron {
     public:
         aqif_neuron(Population * population) : Neuron(population){this -> nt = neuron_type::aqif;};

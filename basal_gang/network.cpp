@@ -5,6 +5,7 @@
 
 #include "include/base_objects.hpp"
 #include "include/neurons.hpp"
+#include "include/devices.hpp"
 #include "include/network.hpp"
 
 Population::Population(int n_neurons, neuron_type nt, SpikingNetwork * spiking_network){

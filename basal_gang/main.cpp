@@ -4,6 +4,7 @@
 #include "include/base_objects.hpp"
 #include "include/neurons.hpp"
 #include "include/network.hpp"
+#include "include/devices.hpp"
 
 // ulimit -c unlimited
 // sudo sysctl -w kernel.core_pattern=/tmp/core-%e.%p.%h.%t
@@ -34,8 +35,8 @@ void free_proj_mat(double** matrix, int N) {
 }
 
 int main(){
-    int Na = 1000;
-    int Nb = 1000;
+    int Na = 100;
+    int Nb = 100;
 
 
     ofstream file("v_trace.txt");
@@ -85,9 +86,13 @@ int main(){
     int n_steps = 100;
 
 
+    Monitor neuron_monitor = Monitor(a.neurons[0]);
+
     for (int i=0; i < n_steps; i++){
         cout << "--------- time " << evo.now << "---------------"<<endl;
         sn.evolve(&evo);
+        neuron_monitor.gather();
+        cout << "monitor history size: " << neuron_monitor.get_history().size() << endl; 
         cout << "spikes  a: " << a.n_spikes_last_step << endl;
         cout << "spikes  b: " << b.n_spikes_last_step << endl;
         if (evo.now < 0.5){
