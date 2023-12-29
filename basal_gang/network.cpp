@@ -115,6 +115,9 @@ void  SpikingNetwork::evolve(EvolutionContext * evo){
     }
     evo -> do_step();
 }
+template<class obj> void SpikingNetwork::add_monitor(Monitor<obj> * monitor){
+    this->monitors.push_back(monitor);
+}
 
 void SpikingNetwork::run(EvolutionContext *evo, double time){
     

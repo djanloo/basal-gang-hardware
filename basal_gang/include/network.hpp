@@ -57,9 +57,9 @@ class SpikingNetwork{
             this->id = new HierarchicalID();
         }
 
-        template <class T>
-        void add_monitor(Monitor<T> * monitor);
-        
+        template <class obj>
+        void add_monitor(Monitor<obj> * monitor);
+
         void evolve(EvolutionContext * evo);
         void run(EvolutionContext * evo, double time);
 };

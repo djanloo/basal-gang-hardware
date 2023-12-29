@@ -1,10 +1,13 @@
 # distutils: language = c++
-import numpy as np
-cimport numpy as np
-import cython
-
+import os
 from libc.stdlib cimport malloc, free
 import ctypes
+
+import numpy as np
+cimport numpy as np
+
+
+
 
 NEURON_TYPES = {"dummy":0, "aqif":1}
 
@@ -147,6 +150,30 @@ cdef class PySpikingNetwork:
     def run(self, dt=0.1, time=1):
         self.evo = new EvolutionContext(dt)
         self._spiking_network.run(self.evo, time)
+
+
+    @classmethod
+    def from_yaml(cls, yaml_file):
+        net = cls("Albert")
+
+        net.yaml_file = yaml_file
+        
+        if not os.path.exists(net.yaml_file):
+            raise FileNotFoundError("YAML file not found")
+        
+        with open(net.yaml_file, "r") as f:
+            net.features_dict = net.safe_load(f)
+
+        net.populations = dict()
+        
+        for pop in net.features_dict['populations']:
+            net.populations[pop['name']] = PyPopulation(pop['size'], pop['neuron_type'], net)
+
+        for proj in net.features_dict['projections']:
+            projector = RandomProjector(**(proj['features']))
+            efferent = net.populations[proj['efferent']]
+            afferent = net.populations[proj['afferent']]
+            efferent.project(projector.get_projection(efferent, afferent), afferent)
 
 
 class RandomProjector:
