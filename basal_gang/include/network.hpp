@@ -3,15 +3,21 @@
 #include <vector>
 #include <map>
 #include <chrono>
+#include <variant>
 
 #include "base_objects.hpp"
 #include "neurons.hpp"
 
 #define WEIGHT_EPS 0.00001
 
+// The menu
+template <class obj> class Monitor;
+template <typename var> class Injector;
 class Projection;
 class Population;
 class SpikingNetwork;
+
+
 
 class Projection{
     public:
@@ -27,12 +33,13 @@ class Population{
         vector<Neuron*> neurons;
         HierarchicalID * id;
 
-        // Byophisical attributes
+        // Biophysical attributes
         int n_spikes_last_step;
 
         Population(int n_neurons, neuron_type nt, SpikingNetwork * spiking_network);
         void project(Projection * projection, Population * child_pop);
         void evolve(EvolutionContext * evo);
+        int monitor();
 };
 
 class SpikingNetwork{
@@ -40,10 +47,19 @@ class SpikingNetwork{
         vector<Population*> populations;
         HierarchicalID * id;
 
+        // Monitors (output)
+        vector <variant < Monitor<Population>*, Monitor<Neuron>* >> monitors;
+
+        // Injectors (input)
+        vector<Injector<double>*> injectors;
+        
         SpikingNetwork(){
             this->id = new HierarchicalID();
         }
 
+        template <class T>
+        void add_monitor(Monitor<T> * monitor);
+        
         void evolve(EvolutionContext * evo);
         void run(EvolutionContext * evo, double time);
 };

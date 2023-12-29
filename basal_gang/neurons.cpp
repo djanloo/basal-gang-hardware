@@ -4,6 +4,9 @@
 #include <queue>
 #include <chrono>
 
+// TODO: circular dependencies
+// Use forward declarations but call them 'the menu'
+
 #include "include/base_objects.hpp"
 #include "include/neurons.hpp"
 #include "include/network.hpp"
@@ -31,7 +34,11 @@ Neuron::Neuron(Population * population){
     this->tau_e = 5;
     this->tau_m = 15;
 
-    this -> state = vector<double> { this -> E_rest + ((double)rand())/RAND_MAX, 0.0, 0.0};
+    this -> state = vector<double> { 
+                                    this -> E_rest + ((double)rand())/RAND_MAX, 
+                                    0.0, 
+                                    0.0
+                                    };
 
 
     this -> id = new HierarchicalID( population -> id);
@@ -87,11 +94,8 @@ void Neuron::evolve(EvolutionContext * evo){
     // Gather spikes
     this-> handle_incoming_spikes(evo);
 
-    // Evolve if it's not refractory
-    if ( (evo->now) > (this->last_spike_time) + (this->tau_refrac) ){ this-> evolve_state(evo);}
-
-    // Synaptic dynamic
-    this->evolve_synapses(evo);
+    // Evolve
+    this->evolve_state(evo);
     
     // Spike generation
     if ((this -> state[0]) > this->E_thr){ this -> spike(evo);}
@@ -109,17 +113,14 @@ void Neuron::spike(EvolutionContext * evo){
 // *************************** More detailed models ************************ //
 
 void aqif_neuron::evolve_state(EvolutionContext * evo){
-    // Membrane decay
-    this->state[0] -= ( this->state[0] - this->E_rest) * evo->dt / this->tau_m;
-    // Synaptic currents
-    this -> state [0] -= evo -> dt * (this -> state [1])*( this -> state[0] - this -> E_exc);
-    this -> state [0] -= evo -> dt * (this -> state [2])*( this -> state[0] - this -> E_inh);
-}
-
-void aqif_neuron::evolve_synapses(EvolutionContext * evo){
+    if ( (evo->now) > (this->last_spike_time) + (this->tau_refrac) ){
+        // Membrane decay
+        this->state[0] -= ( this->state[0] - this->E_rest) * evo->dt / this->tau_m;
+        // Synaptic currents
+        this -> state [0] -= evo -> dt * (this -> state [1])*( this -> state[0] - this -> E_exc);
+        this -> state [0] -= evo -> dt * (this -> state [2])*( this -> state[0] - this -> E_inh);
+    }
+    // Conductances
     this->state[1] -= (this->state[1]) * (evo->dt) / (this->tau_e);
     this->state[2] -= (this->state[2]) * (evo->dt) / (this->tau_i);
 }
-
-
-

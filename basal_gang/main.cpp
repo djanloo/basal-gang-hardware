@@ -35,8 +35,8 @@ void free_proj_mat(double** matrix, int N) {
 }
 
 int main(){
-    int Na = 100;
-    int Nb = 100;
+    int Na = 1000;
+    int Nb = 1000;
 
 
     ofstream file("v_trace.txt");
@@ -85,22 +85,22 @@ int main(){
     auto start  = chrono::high_resolution_clock::now();
     int n_steps = 100;
 
-
-    Monitor neuron_monitor = Monitor(a.neurons[0]);
+    vector<Monitor<Neuron>*> monitors;
+    vector<Injector<double>*> injectors;
+    for (int i=0; i<3;i++){
+        monitors.push_back(new Monitor(a.neurons[i]));
+        injectors.push_back(new Injector(&(a.neurons[i]->state[1]), 0.5, 5));
+    }
 
     for (int i=0; i < n_steps; i++){
         cout << "--------- time " << evo.now << "---------------"<<endl;
         sn.evolve(&evo);
-        neuron_monitor.gather();
-        cout << "monitor history size: " << neuron_monitor.get_history().size() << endl; 
+        for (auto monitor : monitors){ monitor->gather();}
+        for (auto inj:injectors){inj->inject(&evo);}
+
+        cout << "monitor history size: " << monitors[0]->get_history().size() << endl; 
         cout << "spikes  a: " << a.n_spikes_last_step << endl;
         cout << "spikes  b: " << b.n_spikes_last_step << endl;
-        if (evo.now < 0.5){
-            a.neurons[0]->state[1] += 0.1;
-            a.neurons[1]->state[1] += 0.1;
-            a.neurons[2]->state[1] += 0.1;
-            a.neurons[3]->state[1] += 0.1;
-        }
 
         file << evo.now << "\t";
         for (auto statevar : a.neurons[0] -> state ){

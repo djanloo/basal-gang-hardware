@@ -104,6 +104,10 @@ void Population::evolve(EvolutionContext * evo){
     cout << " us/neur )" << endl;
 }
 
+int Population::monitor(){
+    return this-> n_spikes_last_step;
+}
+
 void  SpikingNetwork::evolve(EvolutionContext * evo){
     for (auto population : this -> populations){
         // cout << "spikingnetwork called for evolution of population" << population->id->local_id << endl;
@@ -114,6 +118,27 @@ void  SpikingNetwork::evolve(EvolutionContext * evo){
 
 void SpikingNetwork::run(EvolutionContext *evo, double time){
     
+    /**Gets the values form monitors. 
+     * This may be a little too formal, but 
+     *      - cycles on auto references of variant (auto&)
+     *      - avoid modification of reference (const)
+     * 
+     * Also maybe too pythonic. I just have to quit heterogeneous iterables.
+     * 
+     * TODO: check timing. This is a lot of overhead I see here.
+     * 
+     */
+    for (const auto& monitor_variant : this->monitors){
+        if (holds_alternative<Monitor<Population>*>(monitor_variant)) {
+            auto& population_monitor = get<Monitor<Population>*>(monitor_variant);
+            population_monitor->gather();
+        } else if (holds_alternative<Monitor<Neuron>*>(monitor_variant)) {
+            auto& neuron_monitor = get<Monitor<Neuron>*>(monitor_variant);
+            neuron_monitor->gather();
+        }
+    }
+
+    // Evolve
     while (evo -> now < time){
         for (auto population : this -> populations){
         population -> evolve(evo);

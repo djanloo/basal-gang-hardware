@@ -1,7 +1,6 @@
 #pragma once
 #include <iostream>
 #include <vector>
-#include <list>
 #include <queue>
 #include "base_objects.hpp"
 
@@ -58,9 +57,15 @@ class Synapse{
  * The base dynamical object.
  * The 9 to 5 job of a neuron is:
  *  - process incoming spikes
- *  - evolve the membrane (if not refractory)
- *  - evolve the synapses (always)
+ *  - evolve the state
  *  - fire if it's the case
+ * 
+ * The first and the last stage are (roughly) equal for every model,
+ * while the evolution equation is model dependent.
+ * 
+ * To declare a new neuron:
+ *  - override the `evolve_state` method
+ *  - add the neuron to neuron_type enum class
 */
 class Neuron{
     public:
@@ -86,6 +91,9 @@ class Neuron{
         void handle_incoming_spikes(EvolutionContext * evo);
         void spike(EvolutionContext * evo);
         void evolve(EvolutionContext * evo);
+
+        // Monitor function returns the state
+        // (Maybe later I will divide V from gsyn, too much data otherwise)
         vector<double> monitor(){
             return this->state;
         };
@@ -97,11 +105,14 @@ class Neuron{
 
 
 /*------------------- MORE DETAILED NEURONS ------------------*/
+
+/**
+ * Still a dummy neuron for now. The name makes sense but the dynamical evolution is completely nonsense.
+*/
 class aqif_neuron : public Neuron {
     public:
         aqif_neuron(Population * population) : Neuron(population){this -> nt = neuron_type::aqif;};
 
-        // Explicitly override the evolution functions
+        // Explicitly override the evolution function
         void evolve_state(EvolutionContext * evo) override; 
-        void evolve_synapses(EvolutionContext * evo) override;
 };
