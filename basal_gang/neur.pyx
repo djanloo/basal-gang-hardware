@@ -1,15 +1,21 @@
 # distutils: language = c++
-import os
+"""Interface module between C++ and python.
+
+Convention:
+    - regular C++ object the same as in .hpp files
+    - non-C++ objects called with -Interface suffix
+
+"""
+from time import time
 from libc.stdlib cimport malloc, free
+from libcpp.vector cimport vector
 import ctypes
 
 import numpy as np
 cimport numpy as np
 
-
-
-
 NEURON_TYPES = {"dummy":0, "aqif":1}
+ctypedef vector[double] neuron_state
 
 cdef extern from "include/base_objects.hpp":
     cdef cppclass EvolutionContext:
@@ -21,10 +27,10 @@ cdef extern from "include/base_objects.hpp":
         pass
 
 cdef extern from "include/devices.hpp":
-    cdef cppclass Monitor[T]:
-        Monitor(T * object)
+    cdef cppclass Monitor[O, R]:
+        Monitor(O * object)
         void gather()
-        get_history()
+        vector[R] get_history()
     
     cdef cppclass Injector[var]:
         Injector(var * variable, double rate, double t_max)
@@ -32,7 +38,7 @@ cdef extern from "include/devices.hpp":
 
 cdef extern from "include/neurons.hpp":
     cdef cppclass neuron_type:
-        pass        
+        pass
 
 cdef extern from "include/neurons.hpp" namespace "neuron_type":
     cdef neuron_type dummy
@@ -60,7 +66,7 @@ cdef extern from "include/network.hpp":
         void run(EvolutionContext * evo, double time)
 
 
-cdef class PyProjection():
+cdef class ProjectionInterface():
 
     cdef int start_dimension, end_dimension
     cdef double ** _weights
@@ -103,13 +109,14 @@ cdef class PyProjection():
         return self.delays
 
 
-cdef class PyPopulation:
+cdef class PopulationInterface:
 
     cdef Population * _population
     cdef neuron_type _nt
-    cdef Monitor[Population] * _monitor 
+    cdef Monitor[Population, int] * _monitor 
+    cdef SpikingNetworkInterface spikenet
 
-    def __cinit__(self, int n_neurons, str poptype, PySpikingNetwork spikenet):
+    def __cinit__(self, int n_neurons, str poptype, SpikingNetworkInterface spikenet):
         self._nt = <neuron_type><int>NEURON_TYPES[poptype]
         self.spikenet = spikenet
         self._population = new Population(<int>n_neurons, self._nt, spikenet._spiking_network)
@@ -123,11 +130,11 @@ cdef class PyPopulation:
     def n_spikes_last_step(self):
         return self._population.n_spikes_last_step
 
-    def project(self, PyProjection proj, PyPopulation efferent_pop):
+    def project(self, ProjectionInterface proj, PopulationInterface efferent_pop):
         self._population.project(proj._projection, efferent_pop._population)
 
     def monitorize(self):
-        self._monitor = new Monitor[Population](self._population)
+        self._monitor = new Monitor[Population, int](self._population)
     
     def get_data(self):
         if self._monitor:
@@ -137,7 +144,7 @@ cdef class PyPopulation:
         if self._population != NULL:
             del self._population
 
-cdef class PySpikingNetwork:
+cdef class SpikingNetworkInterface:
 
     cdef SpikingNetwork * _spiking_network
     cdef EvolutionContext * evo
@@ -152,32 +159,8 @@ cdef class PySpikingNetwork:
         self._spiking_network.run(self.evo, time)
 
 
-    @classmethod
-    def from_yaml(cls, yaml_file):
-        net = cls("Albert")
-
-        net.yaml_file = yaml_file
-        
-        if not os.path.exists(net.yaml_file):
-            raise FileNotFoundError("YAML file not found")
-        
-        with open(net.yaml_file, "r") as f:
-            net.features_dict = net.safe_load(f)
-
-        net.populations = dict()
-        
-        for pop in net.features_dict['populations']:
-            net.populations[pop['name']] = PyPopulation(pop['size'], pop['neuron_type'], net)
-
-        for proj in net.features_dict['projections']:
-            projector = RandomProjector(**(proj['features']))
-            efferent = net.populations[proj['efferent']]
-            afferent = net.populations[proj['afferent']]
-            efferent.project(projector.get_projection(efferent, afferent), afferent)
-
-
-class RandomProjector:
-
+class RandomProjectorInterface:
+    """Not an interface nor a C++ object, but stick to the convention"""
     def __init__(self,  inh_fraction=0.0, exc_fraction=0.0, 
                         max_inh = 0.1, max_exc=0.1, 
                         min_delay=0.1, max_delay=0.5):
@@ -189,7 +172,7 @@ class RandomProjector:
         self.min_delay = min_delay
         self.max_delay = max_delay
 
-    def get_projection(self, PyPopulation pop1, PyPopulation pop2):
+    def get_projection(self, PopulationInterface pop1, PopulationInterface pop2):
 
         N, M = pop1.n_neurons, pop2.n_neurons
 
@@ -199,18 +182,24 @@ class RandomProjector:
         weights = np.zeros((N,M))
         delays = np.zeros((N,M))
 
-        for i in range(N):
-            for j in range(M):
-                if active_inh_syn[i,j]:
-                    weights[i,j] = -np.random.uniform(0,self.max_inh)
-                    delays[i,j] = np.random.uniform(self.min_delay, self.max_delay)
-                elif active_exc_syn[i,j]:
-                    weights[i,j] = np.random.uniform(0, self.max_exc)
-                    delays[i,j] = np.random.uniform(self.min_delay, self.max_delay)
 
- 
+        start = time()
+
+        exc_weights = np.random.uniform(0, self.max_exc, size=(N,M))
+        inh_weights = np.random.uniform(0, self.max_inh, size=(N,M))
+
+        exc_weights[~active_exc_syn] = 0.0
+        inh_weights[~active_inh_syn] = 0.0
+        weights = exc_weights - inh_weights
+
+        delays = np.random.uniform(self.min_delay, self.max_delay, size=(N,M))
+        delays[(~active_inh_syn)&(~active_exc_syn)] = 0.0
+
+        end = time()
+        print(f"generating weights and delays took {end-start} seconds")
+        
         self.last_weights = weights
         self.last_delays = delays
 
-        self.last_projection = PyProjection(weights, delays)
+        self.last_projection = ProjectionInterface(weights, delays)
         return self.last_projection
