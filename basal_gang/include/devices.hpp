@@ -12,21 +12,21 @@
  * Type of object and variable are templated,
  * be sure your monitored object has a 'monitor()' method.
 */
-template <class obj>
+template <class obj, typename result>
 class Monitor{
     public:
         // Deduces the type of the return variable of monitor()
-        using monitor_type = decltype(std::declval<obj>().monitor());
+
         Monitor(obj * object){this->monitored_object = object;};
         void gather(){
             this->history.push_back(this->monitored_object->monitor());
         }
-        vector<monitor_type> get_history(){
+        vector<result> get_history(){
             return this->history;
         }
     private:
         obj * monitored_object;
-        vector<monitor_type> history;
+        vector<result> history;
 };
 
 /**

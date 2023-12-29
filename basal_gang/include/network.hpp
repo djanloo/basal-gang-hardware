@@ -11,7 +11,7 @@
 #define WEIGHT_EPS 0.00001
 
 // The menu
-template <class obj> class Monitor;
+template <class obj, typename result> class Monitor;
 template <typename var> class Injector;
 class Projection;
 class Population;
@@ -47,8 +47,9 @@ class SpikingNetwork{
         vector<Population*> populations;
         HierarchicalID * id;
 
+
         // Monitors (output)
-        vector <variant < Monitor<Population>*, Monitor<Neuron>* >> monitors;
+        vector <variant < Monitor<Population, int>*, Monitor <Neuron, neuron_state > * >> monitors;
 
         // Injectors (input)
         vector<Injector<double>*> injectors;
@@ -57,8 +58,8 @@ class SpikingNetwork{
             this->id = new HierarchicalID();
         }
 
-        template <class obj>
-        void add_monitor(Monitor<obj> * monitor);
+        template <class obj, typename res>
+        void add_monitor(Monitor<obj, res> * monitor);
 
         void evolve(EvolutionContext * evo);
         void run(EvolutionContext * evo, double time);

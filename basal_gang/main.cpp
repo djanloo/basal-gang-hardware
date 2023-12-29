@@ -38,12 +38,6 @@ int main(){
     int Na = 1000;
     int Nb = 1000;
 
-
-    ofstream file("v_trace.txt");
-    if (!file.is_open()){
-        return -1;
-    }
-
     SpikingNetwork sn = SpikingNetwork();
     Population a = Population(Na, neuron_type::aqif, &sn);
     Population b = Population(Nb, neuron_type::aqif, &sn);
@@ -85,10 +79,10 @@ int main(){
     auto start  = chrono::high_resolution_clock::now();
     int n_steps = 100;
 
-    vector<Monitor<Neuron>*> monitors;
+    vector< Monitor<Neuron, vector<double> >*> monitors;
     vector<Injector<double>*> injectors;
     for (int i=0; i<3;i++){
-        monitors.push_back(new Monitor(a.neurons[i]));
+        monitors.push_back(new Monitor<Neuron, vector<double>>(a.neurons[i]));
         injectors.push_back(new Injector(&(a.neurons[i]->state[1]), 0.5, 5));
     }
 
@@ -102,13 +96,11 @@ int main(){
         cout << "spikes  a: " << a.n_spikes_last_step << endl;
         cout << "spikes  b: " << b.n_spikes_last_step << endl;
 
-        file << evo.now << "\t";
-        for (auto statevar : a.neurons[0] -> state ){
-            file << statevar << "\t";
-        }
-        file << endl;
     }
     auto end = chrono::high_resolution_clock::now();
+
+    vector<vector<double>> hist = monitors[0]->get_history();
+    for (auto h : hist){cout << h[0] << " ";} cout << endl;
 
     cout << "simulation took " << (chrono::duration_cast<chrono::seconds>(end -start)).count() << " s";
     cout << "\t(" << ((double)(chrono::duration_cast<chrono::seconds>(end -start)).count())/n_steps << " s/step)" << endl;

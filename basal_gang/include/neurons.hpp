@@ -7,6 +7,7 @@
 using namespace std;
 
 enum class neuron_type : unsigned int {dummy, aqif};
+typedef  vector<double> neuron_state;
 
 // The menu:
 class Spike;

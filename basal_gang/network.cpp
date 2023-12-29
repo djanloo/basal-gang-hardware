@@ -115,7 +115,7 @@ void  SpikingNetwork::evolve(EvolutionContext * evo){
     }
     evo -> do_step();
 }
-template<class obj> void SpikingNetwork::add_monitor(Monitor<obj> * monitor){
+template<class obj, typename res> void SpikingNetwork::add_monitor(Monitor<obj, res> * monitor){
     this->monitors.push_back(monitor);
 }
 
@@ -132,20 +132,27 @@ void SpikingNetwork::run(EvolutionContext *evo, double time){
      * 
      */
     for (const auto& monitor_variant : this->monitors){
-        if (holds_alternative<Monitor<Population>*>(monitor_variant)) {
-            auto& population_monitor = get<Monitor<Population>*>(monitor_variant);
+        if (holds_alternative<Monitor<Population, int>*>(monitor_variant)) {
+            auto& population_monitor = get<Monitor<Population,int>*>(monitor_variant);
             population_monitor->gather();
-        } else if (holds_alternative<Monitor<Neuron>*>(monitor_variant)) {
-            auto& neuron_monitor = get<Monitor<Neuron>*>(monitor_variant);
+        } else if (holds_alternative<Monitor<Neuron, neuron_state>*>(monitor_variant)) {
+            auto& neuron_monitor = get<Monitor<Neuron, neuron_state>*>(monitor_variant);
             neuron_monitor->gather();
         }
     }
 
+    auto start = chrono::high_resolution_clock::now();
+    int n_steps = 0;
     // Evolve
     while (evo -> now < time){
         for (auto population : this -> populations){
         population -> evolve(evo);
         }
         evo -> do_step();
+        n_steps++;
     }
+
+    auto end = chrono::high_resolution_clock::now();
+    cout << "simulation took " << (chrono::duration_cast<chrono::seconds>(end -start)).count() << " s";
+    cout << "\t(" << ((double)(chrono::duration_cast<chrono::seconds>(end -start)).count())/n_steps << " s/step)" << endl;
 }
