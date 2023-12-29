@@ -16,6 +16,7 @@ hardcoreprofile:
 	@python3 -m basal_gang.setup --hardcore --profile
 
 remake:
+	@rm -rf basal_gang/cython_generated
 	@python3 -m basal_gang.setup --remake
 
 debug:

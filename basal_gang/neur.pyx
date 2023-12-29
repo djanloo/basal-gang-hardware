@@ -1,11 +1,14 @@
 # distutils: language = c++
 import numpy as np
 cimport numpy as np
+import cython
 
 from libc.stdlib cimport malloc, free
 import ctypes
 
-cdef extern from "base_objects.hpp":
+NEURON_TYPES = {"dummy":0, "aqif":1}
+
+cdef extern from "include/base_objects.hpp":
     cdef cppclass EvolutionContext:
         double dt
         double now
@@ -14,20 +17,45 @@ cdef extern from "base_objects.hpp":
     cdef cppclass HierarchicalID:
         pass
 
-cdef extern from "neurons.hpp":
+cdef extern from "include/devices.hpp":
+    cdef cppclass Monitor[T]:
+        Monitor(T * object)
+        void gather()
+        get_history()
+    
+    cdef cppclass Injector[var]:
+        Injector(var * variable, double rate, double t_max)
+        void inject()
+
+cdef extern from "include/neurons.hpp":
     cdef cppclass neuron_type:
         pass        
 
-cdef extern from "neurons.hpp" namespace "neuron_type":
+cdef extern from "include/neurons.hpp" namespace "neuron_type":
     cdef neuron_type dummy
     cdef neuron_type aqif
 
-NEURON_TYPES = {"dummy":0, "aqif":1}
 
-cdef extern from "network.hpp":
+cdef extern from "include/network.hpp":
     cdef cppclass Projection:
         int start_dimension, end_dimension
         Projection(double ** weights, double ** delays, int start_dimension, int end_dimension)
+
+    cdef cppclass Population:
+        int n_neurons
+        HierarchicalID * id
+
+        int n_spikes_last_step
+
+        Population(int n_neurons, neuron_type nt, SpikingNetwork * spiking_network)
+        void project(Projection * projection, Population * child_pop)
+        void evolve(EvolutionContext * evo)
+
+    cdef cppclass SpikingNetwork:
+        HierarchicalID * id
+        SpikingNetwork()
+        void run(EvolutionContext * evo, double time)
+
 
 cdef class PyProjection():
 
@@ -71,25 +99,18 @@ cdef class PyProjection():
     def delays(self):
         return self.delays
 
-cdef extern from "network.hpp":
-    cdef cppclass Population:
-        int n_neurons
-        HierarchicalID * id
-
-        int n_spikes_last_step
-
-        Population(int n_neurons, neuron_type nt, SpikingNetwork * spiking_network)
-        void project(Projection * projection, Population * child_pop)
-        void evolve(EvolutionContext * evo)
 
 cdef class PyPopulation:
 
     cdef Population * _population
     cdef neuron_type _nt
+    cdef Monitor[Population] * _monitor 
 
     def __cinit__(self, int n_neurons, str poptype, PySpikingNetwork spikenet):
         self._nt = <neuron_type><int>NEURON_TYPES[poptype]
+        self.spikenet = spikenet
         self._population = new Population(<int>n_neurons, self._nt, spikenet._spiking_network)
+        self._monitor = NULL
 
     @property
     def n_neurons(self):
@@ -102,17 +123,16 @@ cdef class PyPopulation:
     def project(self, PyProjection proj, PyPopulation efferent_pop):
         self._population.project(proj._projection, efferent_pop._population)
 
+    def monitorize(self):
+        self._monitor = new Monitor[Population](self._population)
+    
+    def get_data(self):
+        if self._monitor:
+            return self._monitor.get_history()
 
     def __dealloc__(self):
         if self._population != NULL:
             del self._population
-
-
-cdef extern from "network.hpp":
-    cdef cppclass SpikingNetwork:
-        HierarchicalID * id
-        SpikingNetwork()
-        void run(EvolutionContext * evo, double time)
 
 cdef class PySpikingNetwork:
 
