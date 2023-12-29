@@ -9,27 +9,38 @@ using namespace std;
 
 enum class neuron_type : unsigned int {dummy, aqif};
 
+// The menu:
 class Spike;
 class Synapse;
 class Neuron;
 class Population;
 class Projection;
 
+/*
+ * Here a spike is just a weight and an arrival time. 
+ * Due to the way they are processed, the natural structure is
+ * a priority queue.
+ */
 class Spike{
     public:
         Spike(double weight, double arrival_time): weight(weight), arrival_time(arrival_time){
             this -> processed = false;
         }
+        double weight, arrival_time;
         bool processed;
-        double weight, arrival_time;        
 };
 
+/*
+ *  The function used to insert the spike in the queue.
+ */
 struct CompareSpike {
     bool operator()(const Spike * spike1, const Spike * spike2) const {
         return spike1->arrival_time > spike2->arrival_time;
     }
 };
-
+/**
+ * The synapse stores the presynaptic and postsynaptic neurons, the weight and the delay.
+*/
 class Synapse{
     public:
         Synapse(Neuron * presynaptic, Neuron * postsynaptic, double weight, double delay):
@@ -41,13 +52,20 @@ class Synapse{
         Neuron * presynaptic;
         Neuron * postsynaptic;
         double weight, delay;
-
 };
 
+/**
+ * The base dynamical object.
+ * The 9 to 5 job of a neuron is:
+ *  - process incoming spikes
+ *  - evolve the membrane (if not refractory)
+ *  - evolve the synapses (always)
+ *  - fire if it's the case
+*/
 class Neuron{
     public:
         // Base properties
-        vector<double> state;
+        vector<double> state; // boost::odeint format, just in case I have to implement it
         neuron_type nt = neuron_type::dummy;
         HierarchicalID * id;
         Population * population;
@@ -83,6 +101,7 @@ class aqif_neuron : public Neuron {
     public:
         aqif_neuron(Population * population) : Neuron(population){this -> nt = neuron_type::aqif;};
 
+        // Explicitly override the evolution functions
         void evolve_state(EvolutionContext * evo) override; 
         void evolve_synapses(EvolutionContext * evo) override;
 };

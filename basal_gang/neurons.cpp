@@ -1,8 +1,6 @@
 #include <iostream>
 #include <vector>
 #include <algorithm>
-// #include <list>
-// #include <map>
 #include <queue>
 #include <chrono>
 
@@ -50,14 +48,9 @@ void Neuron::connect(Neuron * neuron, double weight, double delay){
 }
 
 void Neuron::handle_incoming_spikes(EvolutionContext * evo){
-    // cout << "handling spikes for p." << this->id->parent->local_id << " n. " << this->id->local_id;
-    // for (auto spike : this->incoming_spikes){
-    //     cout << " ( "<<spike->weight<< " , "<< spike->arrival_time << " ms ) " << " --- ";
-    // } 
-    // cout << endl;
 
     Spike * spike;
-    // cout <<  this->id->local_id << ") spike queue is long "<< this->incoming_spikes.size() << endl;
+
     while (!(this->incoming_spikes.empty())){
         
         spike = this->incoming_spikes.top();
@@ -80,9 +73,8 @@ void Neuron::handle_incoming_spikes(EvolutionContext * evo){
 
                 // Removes the spike from the incoming spikes
                 this->incoming_spikes.pop();
-                // cout << this->id->local_id << ")processed (" <<  spike->weight << " , " << spike->arrival_time << " ms ) since now it's" << evo->now <<endl;
             } else {
-                // cout << this->id->local_id << ")spike (" <<  spike->weight << " , " << spike->arrival_time << " ms ) not processed because now it's " << evo->now<<endl;
+                // If a spike is not to process, neither the rest will be
                 break;
             }
         }else{
@@ -94,24 +86,20 @@ void Neuron::handle_incoming_spikes(EvolutionContext * evo){
 void Neuron::evolve(EvolutionContext * evo){
     // Gather spikes
     this-> handle_incoming_spikes(evo);
-    // Sub-threshold evolution
-    if ( (evo->now) > (this->last_spike_time) + (this->tau_refrac) ){
-        this-> evolve_state(evo);
-    }
+
+    // Evolve if it's not refractory
+    if ( (evo->now) > (this->last_spike_time) + (this->tau_refrac) ){ this-> evolve_state(evo);}
 
     // Synaptic dynamic
     this->evolve_synapses(evo);
     
     // Spike generation
-    if ((this -> state[0]) > this->E_thr){
-        this -> spike(evo);
-    }
+    if ((this -> state[0]) > this->E_thr){ this -> spike(evo);}
 }
 
 void Neuron::spike(EvolutionContext * evo){
-    for (auto synapse : this->efferent_synapses){
-        (*synapse).fire(evo);
-    }
+    for (auto synapse : this->efferent_synapses){ (*synapse).fire(evo); }
+
     this -> last_spike_time = evo -> now;
     this -> state[0] = this->E_rest;
 

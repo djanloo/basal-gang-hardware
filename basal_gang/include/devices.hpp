@@ -8,7 +8,7 @@
 
 template <typename obj>
 
-/*Class to monitor other stuff. Pretty generic, jsut build it on a pointer */
+/*Class to monitor other stuff. Pretty generic, just build it on a pointer */
 class Monitor{
     public:
         using monitor_type = decltype(std::declval<obj>()->monitor());
