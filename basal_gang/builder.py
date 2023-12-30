@@ -1,8 +1,7 @@
 import os
 import yaml
 
-from basal_gang.bin.neur import SpikingNetworkInterface, PopulationInterface, RandomProjectorInterface
-
+from basal_gang.bin import neur
 
 class SpikingNetwork:
 
@@ -12,7 +11,7 @@ class SpikingNetwork:
     @classmethod
     def from_yaml(cls, yaml_file):
         net = cls()
-        net.interface = SpikingNetworkInterface("dummy")
+        net.interface = neur.SpikingNetwork("dummy")
 
         net.yaml_file = yaml_file
         
@@ -25,10 +24,10 @@ class SpikingNetwork:
         net.populations = dict()
         
         for pop in net.features_dict['populations']:
-            net.populations[pop['name']] = PopulationInterface(pop['size'], pop['neuron_type'], net.interface )
+            net.populations[pop['name']] = neur.Population(pop['size'], pop['neuron_type'], net.interface )
 
         for proj in net.features_dict['projections']:
-            projector = RandomProjectorInterface(**(proj['features']))
+            projector = neur.RandomProjector(**(proj['features']))
             efferent = net.populations[proj['efferent']]
             afferent = net.populations[proj['afferent']]
             efferent.project(projector.get_projection(efferent, afferent), afferent)

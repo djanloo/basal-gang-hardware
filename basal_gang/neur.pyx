@@ -2,13 +2,15 @@
 """Interface module between C++ and python.
 
 Convention:
-    - regular C++ object the same as in .hpp files
-    - non-C++ objects called with -Interface suffix
-
+    - Python-visible objects get nice names
+    - C++ objects get a '_' prefix
 """
+cimport basal_gang.cinterface as cinter
+
 from time import time
-from libc.stdlib cimport malloc, free
+from libc.stdlib cimport malloc
 from libcpp.vector cimport vector
+
 import ctypes
 
 import numpy as np
@@ -17,61 +19,12 @@ cimport numpy as np
 NEURON_TYPES = {"dummy":0, "aqif":1}
 ctypedef vector[double] neuron_state
 
-cdef extern from "include/base_objects.hpp":
-    cdef cppclass EvolutionContext:
-        double dt
-        double now
-        EvolutionContext(double _dt)
-
-    cdef cppclass HierarchicalID:
-        pass
-
-cdef extern from "include/devices.hpp":
-    cdef cppclass Monitor[O, R]:
-        Monitor(O * object)
-        void gather()
-        vector[R] get_history()
-    
-    cdef cppclass Injector[var]:
-        Injector(var * variable, double rate, double t_max)
-        void inject()
-
-cdef extern from "include/neurons.hpp":
-    cdef cppclass neuron_type:
-        pass
-
-cdef extern from "include/neurons.hpp" namespace "neuron_type":
-    cdef neuron_type dummy
-    cdef neuron_type aqif
-
-
-cdef extern from "include/network.hpp":
-    cdef cppclass Projection:
-        int start_dimension, end_dimension
-        Projection(double ** weights, double ** delays, int start_dimension, int end_dimension)
-
-    cdef cppclass Population:
-        int n_neurons
-        HierarchicalID * id
-
-        int n_spikes_last_step
-
-        Population(int n_neurons, neuron_type nt, SpikingNetwork * spiking_network)
-        void project(Projection * projection, Population * child_pop)
-        void evolve(EvolutionContext * evo)
-
-    cdef cppclass SpikingNetwork:
-        HierarchicalID * id
-        SpikingNetwork()
-        void run(EvolutionContext * evo, double time)
-
-
-cdef class ProjectionInterface():
+cdef class Projection():
 
     cdef int start_dimension, end_dimension
     cdef double ** _weights
     cdef double ** _delays 
-    cdef Projection * _projection
+    cdef cinter.Projection * _projection
 
     cdef double [:,:] weights, delays
 
@@ -83,7 +36,7 @@ cdef class ProjectionInterface():
         self.end_dimension   = weights.shape[1]
 
         cdef np.ndarray[double, ndim=2, mode="c"] contiguous_weights = np.ascontiguousarray(weights, dtype = ctypes.c_double)
-        cdef np.ndarray[double, ndim=2, mode="c"] contiguous_delays = np.ascontiguousarray(delays, dtype = ctypes.c_double)
+        cdef np.ndarray[double, ndim=2, mode="c"] contiguous_delays  = np.ascontiguousarray(delays,  dtype = ctypes.c_double)
 
         self._weights = <double **> malloc(self.start_dimension * sizeof(double*))
         self._delays  = <double **> malloc(self.start_dimension * sizeof(double*))
@@ -96,7 +49,7 @@ cdef class ProjectionInterface():
             self._weights[i] = &contiguous_weights[i, 0]
             self._delays[i] = &contiguous_delays[i,0]
 
-        self._projection = new Projection(  <double**> &self._weights[0], 
+        self._projection = new cinter.Projection(  <double**> &self._weights[0], 
                                             <double**> &self._delays[0], 
                                             self.start_dimension, 
                                             self.end_dimension)
@@ -109,17 +62,18 @@ cdef class ProjectionInterface():
         return self.delays
 
 
-cdef class PopulationInterface:
+cdef class Population:
 
-    cdef Population * _population
-    cdef neuron_type _nt
-    cdef Monitor[Population, int] * _monitor 
-    cdef SpikingNetworkInterface spikenet
+    cdef cinter.Population * _population
+    cdef cinter.neuron_type _nt
+    cdef cinter.PopulationMonitor * _monitor 
 
-    def __cinit__(self, int n_neurons, str poptype, SpikingNetworkInterface spikenet):
-        self._nt = <neuron_type><int>NEURON_TYPES[poptype]
+    cdef SpikingNetwork spikenet
+
+    def __cinit__(self, int n_neurons, str poptype, SpikingNetwork spikenet):
+        self._nt = <cinter.neuron_type><int>NEURON_TYPES[poptype]
         self.spikenet = spikenet
-        self._population = new Population(<int>n_neurons, self._nt, spikenet._spiking_network)
+        self._population = new cinter.Population(<int>n_neurons, self._nt, spikenet._spiking_network)
         self._monitor = NULL
 
     @property
@@ -130,36 +84,50 @@ cdef class PopulationInterface:
     def n_spikes_last_step(self):
         return self._population.n_spikes_last_step
 
-    def project(self, ProjectionInterface proj, PopulationInterface efferent_pop):
+    def project(self, Projection proj, Population efferent_pop):
         self._population.project(proj._projection, efferent_pop._population)
 
+    def add_injector(self, current, time):
+        cdef cinter.PopCurrentInjector * injector = new cinter.PopCurrentInjector(self._population, current, time)
+        self.spikenet._spiking_network.add_injector(injector)
+
     def monitorize(self):
-        self._monitor = new Monitor[Population, int](self._population)
+        self._monitor = new cinter.PopulationMonitor(self._population)
+        self.spikenet._spiking_network.add_monitor(self._monitor)
     
     def get_data(self):
         if self._monitor:
             return self._monitor.get_history()
+        else:
+            print("No monitor was found ro report data")
 
     def __dealloc__(self):
+        print("Deallocating a population")
         if self._population != NULL:
             del self._population
 
-cdef class SpikingNetworkInterface:
+cdef class SpikingNetwork:
 
-    cdef SpikingNetwork * _spiking_network
-    cdef EvolutionContext * evo
+    cdef cinter.SpikingNetwork * _spiking_network
+    cdef cinter.EvolutionContext * _evo
     cdef str name
 
     def __cinit__(self, str name):
-        self._spiking_network = new SpikingNetwork()
+        self._spiking_network = new cinter.SpikingNetwork()
         self.name = name
 
+
     def run(self, dt=0.1, time=1):
-        self.evo = new EvolutionContext(dt)
-        self._spiking_network.run(self.evo, time)
+        self._evo = new cinter.EvolutionContext(dt)
+        self._spiking_network.run(self._evo, time)
+
+    def __dealloc__(self):
+        print("Deallocating a spiking network")
+        del self._spiking_network
+        del self._evo
 
 
-class RandomProjectorInterface:
+class RandomProjector:
     """Not an interface nor a C++ object, but stick to the convention"""
     def __init__(self,  inh_fraction=0.0, exc_fraction=0.0, 
                         max_inh = 0.1, max_exc=0.1, 
@@ -172,7 +140,7 @@ class RandomProjectorInterface:
         self.min_delay = min_delay
         self.max_delay = max_delay
 
-    def get_projection(self, PopulationInterface pop1, PopulationInterface pop2):
+    def get_projection(self, Population pop1, Population pop2):
 
         N, M = pop1.n_neurons, pop2.n_neurons
 
@@ -197,9 +165,9 @@ class RandomProjectorInterface:
 
         end = time()
         print(f"generating weights and delays took {end-start} seconds")
-        
+
         self.last_weights = weights
         self.last_delays = delays
 
-        self.last_projection = ProjectionInterface(weights, delays)
+        self.last_projection = Projection(weights, delays)
         return self.last_projection

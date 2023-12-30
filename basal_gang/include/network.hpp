@@ -5,18 +5,21 @@
 #include <chrono>
 #include <variant>
 
-#include "base_objects.hpp"
-#include "neurons.hpp"
-
 #define WEIGHT_EPS 0.00001
 
 // The menu
-template <class obj, typename result> class Monitor;
-template <typename var> class Injector;
+
+class HierarchicalID;
+class EvolutionContext;
+
+class Neuron;
+
 class Projection;
 class Population;
 class SpikingNetwork;
 
+class PopulationMonitor;
+class PopCurrentInjector;
 
 
 class Projection{
@@ -30,7 +33,7 @@ class Projection{
 class Population{
     public:
         int n_neurons;
-        vector<Neuron*> neurons;
+        std::vector<Neuron*> neurons;
         HierarchicalID * id;
 
         // Biophysical attributes
@@ -44,22 +47,22 @@ class Population{
 
 class SpikingNetwork{
     public:
-        vector<Population*> populations;
+        std::vector<Population*> populations;
         HierarchicalID * id;
 
-
         // Monitors (output)
-        vector <variant < Monitor<Population, int>*, Monitor <Neuron, neuron_state > * >> monitors;
+        std::vector<PopulationMonitor*> population_monitors;
 
         // Injectors (input)
-        vector<Injector<double>*> injectors;
-        
-        SpikingNetwork(){
-            this->id = new HierarchicalID();
-        }
+        std::vector<PopCurrentInjector*> injectors;
 
-        template <class obj, typename res>
-        void add_monitor(Monitor<obj, res> * monitor);
+        SpikingNetwork();
+
+        void add_monitor(PopulationMonitor * monitor){
+            std::cout<< "Adding monitor" << std::endl;
+            this->population_monitors.push_back(monitor);
+            };
+        void add_injector(PopCurrentInjector * injector){this->injectors.push_back(injector);}
 
         void evolve(EvolutionContext * evo);
         void run(EvolutionContext * evo, double time);

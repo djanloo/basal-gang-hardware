@@ -9,3 +9,4 @@
 neur:
   - neurons.cpp
   - network.cpp
+  - devices.cpp

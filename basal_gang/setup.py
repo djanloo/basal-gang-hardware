@@ -1,6 +1,5 @@
 from setuptools import Extension, setup
 import os
-import sys
 
 import argparse
 from Cython.Distutils import build_ext

@@ -1,50 +1,57 @@
 #pragma once
 #include <iostream>
 #include <variant>
+#include <vector>
 
-#include "base_objects.hpp"
-#include "neurons.hpp"
-#include "network.hpp"
-
+class Population;
 
 /**
  * A class to watch what the others are doing.
  * Type of object and variable are templated,
  * be sure your monitored object has a 'monitor()' method.
 */
-template <class obj, typename result>
-class Monitor{
+class PopulationMonitor{
     public:
         // Deduces the type of the return variable of monitor()
 
-        Monitor(obj * object){this->monitored_object = object;};
-        void gather(){
-            this->history.push_back(this->monitored_object->monitor());
-        }
-        vector<result> get_history(){
+        PopulationMonitor(Population * pop){this->monitored_pop = pop;};
+        void gather();
+
+        std::vector<int> get_history(){
             return this->history;
         }
     private:
-        obj * monitored_object;
-        vector<result> history;
+        Population * monitored_pop;
+        std::vector<int> history;
 };
 
 /**
  * The input for neurons.
-*/
-template <typename var>
-class Injector {
-public:
-    Injector( var * _variable_ptr, double rate, double t_max)
-        : variable_ptr(_variable_ptr), rate(rate), t_max(t_max) {}
+// */
+// template <typename var>
+// class Injector {
+// public:
+//     Injector( var * _variable_ptr, double rate, double t_max)
+//         : variable_ptr(_variable_ptr), rate(rate), t_max(t_max) {}
 
-    void inject(EvolutionContext *evo) {
-        if (evo->now < t_max && variable_ptr) {
-            *variable_ptr += rate * evo->dt;
-        }
-    }
+//     virtual void inject(EvolutionContext *evo) {
+//         // if (evo->now < t_max && variable_ptr) {
+//         //     *variable_ptr += rate * evo->dt;
+//         // }
+//     }
 
-private:
-    var * variable_ptr;
-    double rate, t_max;
+//     protected:
+//         var * variable_ptr;
+//         double rate, t_max;
+// };
+
+
+class PopCurrentInjector{
+    public:
+        PopCurrentInjector(Population * pop, double I, double t_max):pop(pop), I(I), t_max(t_max){}
+        void inject(EvolutionContext * evo);
+        
+    private:
+        Population * pop;
+        double I, t_max;
 };

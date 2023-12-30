@@ -1,21 +1,37 @@
 #pragma once
+#include <cstddef>
 
+/**
+ * @class HierarchicalID
+ * @brief The ID object to identify nested structures
+ * 
+ * Create without arguments to get a supercontainer.
+ * Then create a nested object by passing as argument 
+ * the pointer to the parent container.
+ * 
+*/
 class HierarchicalID{
-    // Object to build nested identification systems
     public:
         HierarchicalID * parent;
-        unsigned int local_id;
-        unsigned int current_max_subclass_id;
 
-        HierarchicalID():parent(NULL),local_id(-1),current_max_subclass_id(0){}
-        HierarchicalID(HierarchicalID * parent): parent(parent){
-            //  The inner container constructor
-            this->local_id = this->parent->current_max_subclass_id;
-            this->parent->current_max_subclass_id ++;
-            this->current_max_subclass_id = 0;
+        HierarchicalID():parent(NULL),local_id(-1),n_subclasses(0){}
+        HierarchicalID(HierarchicalID * parent): parent(parent),n_subclasses(0){
+            this->local_id = this->parent->n_subclasses;
+            this->parent->n_subclasses ++;
         }
+        unsigned int get_id(){return this->local_id;}
+    private:
+        unsigned int local_id;
+        unsigned int n_subclasses;
 };
 
+/**
+ * @class EvolutuionContext
+ * @brief The object that contains time evolution infos
+ * 
+ * @param[in] dt
+ * 
+*/
 class EvolutionContext{
     public:
         double now; // time in millis

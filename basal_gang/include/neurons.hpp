@@ -2,7 +2,6 @@
 #include <iostream>
 #include <vector>
 #include <queue>
-#include "base_objects.hpp"
 
 using namespace std;
 
@@ -10,6 +9,8 @@ enum class neuron_type : unsigned int {dummy, aqif};
 typedef  vector<double> neuron_state;
 
 // The menu:
+class EvolutionContext;
+class HierarchicalID;
 class Spike;
 class Synapse;
 class Neuron;

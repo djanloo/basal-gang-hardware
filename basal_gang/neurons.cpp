@@ -4,15 +4,10 @@
 #include <queue>
 #include <chrono>
 
-// TODO: circular dependencies
-// Use forward declarations but call them 'the menu'
-
 #include "include/base_objects.hpp"
+#include "include/devices.hpp"
 #include "include/neurons.hpp"
 #include "include/network.hpp"
-
-using namespace std;
-
 
 void Synapse::fire(EvolutionContext * evo){
     Spike * newspike = new Spike(this->weight, evo->now + this->delay);
