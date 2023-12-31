@@ -35,8 +35,8 @@ void free_proj_mat(double** matrix, int N) {
 }
 
 int main(){
-    int Na = 1000;
-    int Nb = 1000;
+    int Na = 5000;
+    int Nb = 5000;
 
     SpikingNetwork sn = SpikingNetwork();
     Population a = Population(Na, neuron_type::aqif, &sn);
@@ -74,22 +74,11 @@ int main(){
     free_proj_mat(delays, Nb);
 
 
+    PopCurrentInjector stimulus = PopCurrentInjector(&a, 15, 2);
+    sn.add_injector(&stimulus);
+
     EvolutionContext evo = EvolutionContext(0.1);
     
-    auto start  = chrono::high_resolution_clock::now();
-    int n_steps = 100;
-
-
-    for (int i=0; i < n_steps; i++){
-        cout << "--------- time " << evo.now << "---------------"<<endl;
-        sn.evolve(&evo);
-        cout << "spikes  a: " << a.n_spikes_last_step << endl;
-        cout << "spikes  b: " << b.n_spikes_last_step << endl;
-
-    }
-    auto end = chrono::high_resolution_clock::now();
-
-    cout << "simulation took " << (chrono::duration_cast<chrono::seconds>(end -start)).count() << " s";
-    cout << "\t(" << ((double)(chrono::duration_cast<chrono::seconds>(end -start)).count())/n_steps << " s/step)" << endl;
+    sn.run(&evo, 5);
 }
 

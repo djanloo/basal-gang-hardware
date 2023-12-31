@@ -15,10 +15,6 @@ cdef extern from "include/devices.hpp":
         void gather()
         vector[int] get_history()
     
-    # cdef cppclass Injector[var]:
-    #     Injector(var * variable, double rate, double t_max)
-    #     void inject(EvolutionContext * evo)
-    
     cdef cppclass PopCurrentInjector:
         PopCurrentInjector(Population * pop, double I, double t_max)
         void inject(EvolutionContext * evo)

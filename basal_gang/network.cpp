@@ -8,6 +8,7 @@
 #include "include/network.hpp"
 #include "include/devices.hpp"
 
+
 Population::Population(int n_neurons, neuron_type nt, SpikingNetwork * spiking_network){
     this -> n_neurons = n_neurons;
     this -> n_spikes_last_step = 0;
@@ -16,9 +17,7 @@ Population::Population(int n_neurons, neuron_type nt, SpikingNetwork * spiking_n
     auto start = chrono::high_resolution_clock::now();
 
     for ( int i = 0; i < n_neurons; i++){
-        // The big switch, in Python this would be easier.
-        // It's not particulary efficient but it has to be done
-        // just once so nvm
+        // This can be avoided, probably using <variant>
         switch(nt){
         case neuron_type::dummy: new Neuron(this); break;       // remember not to push_back here
         case neuron_type::aqif: new aqif_neuron(this); break;   // calling the constructor is enough
@@ -27,7 +26,7 @@ Population::Population(int n_neurons, neuron_type nt, SpikingNetwork * spiking_n
 
     auto end = chrono::high_resolution_clock::now();
     cout << "Building population "<< this->id->get_id() << " took " << (chrono::duration_cast<chrono::milliseconds>(end -start)).count() << " ms    (";
-    cout << ((double)(chrono::duration_cast<chrono::microseconds>(end -start)).count())/n_neurons << " us/neur)" << endl;
+    cout << ((double)(chrono::duration_cast<chrono::microseconds>(end-start)).count())/n_neurons << " us/neur)" << endl;
     
     // Adds itself to the spiking network populations
     (spiking_network->populations).push_back(this);
@@ -123,7 +122,7 @@ void SpikingNetwork::run(EvolutionContext * evo, double time){
 
     // Evolve
     while (evo -> now < time){
-
+        cout << "------ Time: " << evo-> now << "---------" << endl;
         auto start_gather = chrono::high_resolution_clock::now();
         for (const auto& population_monitor : this->population_monitors){
             population_monitor->gather();
