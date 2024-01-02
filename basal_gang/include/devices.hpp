@@ -3,18 +3,13 @@
 #include <variant>
 #include <vector>
 
+typedef  std::vector<double> neuron_state;
 class Population;
 
-/**
- * A class to watch what the others are doing.
- * Type of object and variable are templated,
- * be sure your monitored object has a 'monitor()' method.
-*/
-class PopulationMonitor{
+class PopulationSpikeMonitor{
     public:
-        // Deduces the type of the return variable of monitor()
 
-        PopulationMonitor(Population * pop){this->monitored_pop = pop;};
+        PopulationSpikeMonitor(Population * pop){this->monitored_pop = pop;};
         void gather();
 
         std::vector<int> get_history(){
@@ -24,6 +19,21 @@ class PopulationMonitor{
         Population * monitored_pop;
         std::vector<int> history;
 };
+
+class PopulationStateMonitor{
+    public:
+
+        PopulationStateMonitor(Population * pop){this->monitored_pop = pop;};
+        void gather();
+
+        std::vector<std::vector<neuron_state>> get_history(){
+            return this->history;
+        }
+    private:
+        Population * monitored_pop;
+        std::vector<std::vector<neuron_state>> history;
+};
+
 
 /**
  * The input for neurons.

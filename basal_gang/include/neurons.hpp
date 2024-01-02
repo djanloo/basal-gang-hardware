@@ -5,8 +5,8 @@
 
 using namespace std;
 
-enum class neuron_type : unsigned int {dummy, aqif};
-typedef  vector<double> neuron_state;
+enum class neuron_type : unsigned int {dummy, aqif, izhikevich};
+typedef vector<double> neuron_state;
 
 // The menu:
 class EvolutionContext;
@@ -91,7 +91,6 @@ class Neuron{
         Neuron(Population * population); 
         void connect(Neuron * neuron, double weight, double delay);
         void handle_incoming_spikes(EvolutionContext * evo);
-        void spike(EvolutionContext * evo);
         void evolve(EvolutionContext * evo);
 
         // Monitor function returns the state
@@ -101,6 +100,7 @@ class Neuron{
         };
 
         // These must be implemented for each specific neuron
+        virtual void spike(EvolutionContext * evo);
         virtual void evolve_state(EvolutionContext * evo){cout << "WARNING: using virtual evolve_state of <Neuron>";};
         virtual void evolve_synapses(EvolutionContext * evo){cout << "WARNING: using virtual evolve_synapses of <Neuron>";};
 };
@@ -116,5 +116,14 @@ class aqif_neuron : public Neuron {
         aqif_neuron(Population * population) : Neuron(population){this -> nt = neuron_type::aqif;};
 
         // Explicitly override the evolution function
-        void evolve_state(EvolutionContext * evo) override; 
+        void evolve_state(EvolutionContext * evo) override;
+};
+
+class izhikevich_neuron : public Neuron {
+    public:
+        izhikevich_neuron(Population * population);
+        void evolve_state(EvolutionContext * evo) override;
+        void spike(EvolutionContext * evo) override;
+    private:
+        double a,b,c,d;
 };

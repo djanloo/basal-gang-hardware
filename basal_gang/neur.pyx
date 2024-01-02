@@ -16,7 +16,7 @@ import ctypes
 import numpy as np
 cimport numpy as np
 
-NEURON_TYPES = {"dummy":0, "aqif":1}
+NEURON_TYPES = {"dummy":0, "aqif":1, "izhikevich":2}
 ctypedef vector[double] neuron_state
 
 cdef class Projection():
@@ -66,7 +66,8 @@ cdef class Population:
 
     cdef cinter.Population * _population
     cdef cinter.neuron_type _nt
-    cdef cinter.PopulationMonitor * _monitor 
+    cdef cinter.PopulationSpikeMonitor * _spike_monitor 
+    cdef cinter.PopulationStateMonitor * _state_monitor
 
     cdef SpikingNetwork spikenet
 
@@ -74,7 +75,8 @@ cdef class Population:
         self._nt = <cinter.neuron_type><int>NEURON_TYPES[poptype]
         self.spikenet = spikenet
         self._population = new cinter.Population(<int>n_neurons, self._nt, spikenet._spiking_network)
-        self._monitor = NULL
+        self._spike_monitor = NULL
+        self._state_monitor = NULL
 
     @property
     def n_neurons(self):
@@ -91,15 +93,22 @@ cdef class Population:
         cdef cinter.PopCurrentInjector * injector = new cinter.PopCurrentInjector(self._population, current, time)
         self.spikenet._spiking_network.add_injector(injector)
 
-    def monitorize(self):
-        self._monitor = new cinter.PopulationMonitor(self._population)
-        self.spikenet._spiking_network.add_monitor(self._monitor)
+    def monitorize_spikes(self):
+        self._spike_monitor = self.spikenet._spiking_network.add_spike_monitor(self._population)
+    
+    def monitorize_states(self):
+        self._state_monitor = self.spikenet._spiking_network.add_state_monitor(self._population)
     
     def get_data(self):
-        if self._monitor:
-            return self._monitor.get_history()
-        else:
-            print("No monitor was found ro report data")
+        data = dict()
+
+        if self._spike_monitor:
+            data['spikes'] = self._spike_monitor.get_history()
+
+        if self._state_monitor:
+            data['states'] = self._state_monitor.get_history()
+        
+        return data
 
     def __dealloc__(self):
         print("Deallocating a population")

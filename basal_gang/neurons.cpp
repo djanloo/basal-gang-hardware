@@ -9,6 +9,8 @@
 #include "include/neurons.hpp"
 #include "include/network.hpp"
 
+#define MAX_POTENTIAL_INCREMENT 10 // mV
+
 void Synapse::fire(EvolutionContext * evo){
     this->postsynaptic->incoming_spikes.emplace(this->weight, evo->now + this->delay);
     return;
@@ -105,14 +107,63 @@ void Neuron::spike(EvolutionContext * evo){
 // *************************** More detailed models ************************ //
 
 void aqif_neuron::evolve_state(EvolutionContext * evo){
+    double V_m = this->state[0];
+
     if ( (evo->now) > (this->last_spike_time) + (this->tau_refrac) ){
         // Membrane decay
-        this->state[0] -= ( this->state[0] - this->E_rest) * evo->dt / this->tau_m;
+        this->state[0] -= ( V_m - this->E_rest) * evo->dt / this->tau_m;
         // Synaptic currents
-        this -> state [0] -= evo -> dt * (this -> state [1])*( this -> state[0] - this -> E_exc);
-        this -> state [0] -= evo -> dt * (this -> state [2])*( this -> state[0] - this -> E_inh);
+        this -> state [0] -= evo -> dt * (this -> state [1])*(  V_m - this -> E_exc);
+        this -> state [0] -= evo -> dt * (this -> state [2])*(  V_m - this -> E_inh);
     }
     // Conductances
     this->state[1] -= (this->state[1]) * (evo->dt) / (this->tau_e);
     this->state[2] -= (this->state[2]) * (evo->dt) / (this->tau_i);
+}
+
+izhikevich_neuron::izhikevich_neuron(Population * population): Neuron(population){
+    this->nt = neuron_type::izhikevich;
+
+    this -> state = vector<double> { 
+                                    this -> E_rest + ((double)rand())/RAND_MAX, // V
+                                    0.0, // g_syn_exc
+                                    0.0, // g_syn_inh
+                                    0.0 // u
+                                    };
+    
+    this-> a = 0.02;
+    this-> b = 0.2;
+    this-> c = -65;
+    this-> d = 8;
+}
+
+void izhikevich_neuron::evolve_state(EvolutionContext * evo){
+    double V_m = this->state[0];
+    double u = this->state[3];
+
+    this->state[0] += evo->dt * ( 0.04*V_m*V_m + 5*V_m + 140 - u); // V
+    this->state[3] += evo->dt * this->a * ( this->b * V_m - u);  // u
+
+    // Synaptic currents
+    this -> state [0] -= evo->dt * (this->state [1])*(  V_m - this->E_exc);
+    this -> state [0] -= evo->dt * (this->state [2])*(  V_m - this->E_inh);
+
+    // Conductances
+    this->state[1] -= (this->state[1]) * (evo->dt) / (this->tau_e);
+    this->state[2] -= (this->state[2]) * (evo->dt) / (this->tau_i);
+
+    if (abs(this->state[0] - V_m)> MAX_POTENTIAL_INCREMENT){std::cout << "WARNING: membrane potential increment over maximum"<< std::endl;}
+
+}
+
+void izhikevich_neuron::spike(EvolutionContext * evo){ 
+
+    for (auto synapse : this->efferent_synapses){ (*synapse).fire(evo); }
+
+    this->state[0]  = this->E_rest;
+    this->state[3] += this->d;
+
+    this->last_spike_time = evo->now;
+    ((this->population)->n_spikes_last_step) ++;
+
 }

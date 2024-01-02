@@ -10,10 +10,15 @@ cdef extern from "include/base_objects.hpp":
         pass
 
 cdef extern from "include/devices.hpp":
-    cdef cppclass PopulationMonitor:
+    cdef cppclass PopulationSpikeMonitor:
         PopulationMonitor(Population * pop)
         void gather()
         vector[int] get_history()
+    
+    cdef cppclass PopulationStateMonitor:
+        PopulationMonitor(Population * pop)
+        void gather()
+        vector[vector[vector[double]]] get_history()
     
     cdef cppclass PopCurrentInjector:
         PopCurrentInjector(Population * pop, double I, double t_max)
@@ -26,6 +31,7 @@ cdef extern from "include/neurons.hpp":
 cdef extern from "include/neurons.hpp" namespace "neuron_type":
     cdef neuron_type dummy
     cdef neuron_type aqif
+    cdef neuron_type izhikevich
 
 cdef extern from "include/network.hpp":
     cdef cppclass Projection:
@@ -46,6 +52,9 @@ cdef extern from "include/network.hpp":
         HierarchicalID * id
         SpikingNetwork()
 
+        # I/O
         void add_injector(PopCurrentInjector * injector)
-        void add_monitor(PopulationMonitor * monitor)
+        PopulationSpikeMonitor * add_spike_monitor(Population * population)
+        PopulationStateMonitor * add_state_monitor(Population * population)
+
         void run(EvolutionContext * evo, double time)

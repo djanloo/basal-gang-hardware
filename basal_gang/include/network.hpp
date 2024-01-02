@@ -18,7 +18,8 @@ class Projection;
 class Population;
 class SpikingNetwork;
 
-class PopulationMonitor;
+class PopulationSpikeMonitor;
+class PopulationStateMonitor;
 class PopCurrentInjector;
 
 
@@ -49,21 +50,20 @@ class SpikingNetwork{
     public:
         std::vector<Population*> populations;
         HierarchicalID * id;
-
-        // Monitors (output)
-        std::vector<PopulationMonitor*> population_monitors;
-
-        // Injectors (input)
-        std::vector<PopCurrentInjector*> injectors;
-
         SpikingNetwork();
 
-        void add_monitor(PopulationMonitor * monitor){
-            std::cout<< "Adding monitor" << std::endl;
-            this->population_monitors.push_back(monitor);
-            };
+        // Injectors (inputs)
+        std::vector<PopCurrentInjector*> injectors;
         void add_injector(PopCurrentInjector * injector){this->injectors.push_back(injector);}
 
+        // Monitors (outputs)
+        std::vector<PopulationSpikeMonitor*> population_spike_monitors;
+        std::vector<PopulationStateMonitor*> population_state_monitors;
+
+        PopulationSpikeMonitor * add_spike_monitor(Population * population);
+        PopulationStateMonitor * add_state_monitor(Population * population);
+
+        // Evolution stuff
         void evolve(EvolutionContext * evo);
         void run(EvolutionContext * evo, double time);
 };

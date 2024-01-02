@@ -21,6 +21,7 @@ Population::Population(int n_neurons, neuron_type nt, SpikingNetwork * spiking_n
         switch(nt){
         case neuron_type::dummy: new Neuron(this); break;       // remember not to push_back here
         case neuron_type::aqif: new aqif_neuron(this); break;   // calling the constructor is enough
+        case neuron_type::izhikevich: new izhikevich_neuron(this); break;
         };
     }
 
@@ -85,19 +86,29 @@ void Population::evolve(EvolutionContext * evo){
     cout << " us/neur )" << endl;
 }
 
-int Population::monitor(){
-    return this-> n_spikes_last_step;
+SpikingNetwork::SpikingNetwork(){
+    this->id = new HierarchicalID();
 }
+
+PopulationSpikeMonitor * SpikingNetwork::add_spike_monitor(Population * population){
+            std::cout<< "Adding spike monitor" << std::endl;
+            PopulationSpikeMonitor * new_monitor = new PopulationSpikeMonitor(population);
+            this->population_spike_monitors.push_back(new_monitor);
+            return new_monitor;
+            };
+
+PopulationStateMonitor * SpikingNetwork::add_state_monitor(Population * population){
+    std::cout<< "Adding state monitor" << std::endl;
+    PopulationStateMonitor * new_monitor = new PopulationStateMonitor(population);
+    this->population_state_monitors.push_back(new_monitor);
+    return new_monitor;
+    };
 
 void  SpikingNetwork::evolve(EvolutionContext * evo){
     for (auto population : this -> populations){
         population -> evolve(evo);
     }
     evo -> do_step();
-}
-
-SpikingNetwork::SpikingNetwork(){
-    this->id = new HierarchicalID();
 }
 
 void SpikingNetwork::run(EvolutionContext * evo, double time){  
@@ -124,7 +135,10 @@ void SpikingNetwork::run(EvolutionContext * evo, double time){
     while (evo -> now < time){
         cout << "------ Time: " << evo-> now << "---------" << endl;
         auto start_gather = chrono::high_resolution_clock::now();
-        for (const auto& population_monitor : this->population_monitors){
+        for (const auto& population_monitor : this->population_spike_monitors){
+            population_monitor->gather();
+        }
+        for (const auto& population_monitor : this->population_state_monitors){
             population_monitor->gather();
         }
         auto end_gather = chrono::high_resolution_clock::now();
