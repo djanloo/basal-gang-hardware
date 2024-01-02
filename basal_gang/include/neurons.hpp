@@ -35,8 +35,8 @@ class Spike{
  *  The function used to insert the spike in the queue.
  */
 struct CompareSpike {
-    bool operator()(const Spike * spike1, const Spike * spike2) const {
-        return spike1->arrival_time > spike2->arrival_time;
+    bool operator()(const Spike& spike1, const Spike& spike2) const {
+        return spike1.arrival_time > spike2.arrival_time;
     }
 };
 /**
@@ -83,7 +83,7 @@ class Neuron{
 
         // Spike stuff
         vector<Synapse*> efferent_synapses;
-        priority_queue<Spike*, vector<Spike *>, CompareSpike> incoming_spikes;
+        priority_queue<Spike, vector<Spike>, CompareSpike> incoming_spikes;
         double last_spike_time;
 
         // Yeah I know, not beautiful but think about it

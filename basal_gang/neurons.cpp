@@ -10,8 +10,7 @@
 #include "include/network.hpp"
 
 void Synapse::fire(EvolutionContext * evo){
-    Spike * newspike = new Spike(this->weight, evo->now + this->delay);
-    this->postsynaptic->incoming_spikes.push(newspike);
+    this->postsynaptic->incoming_spikes.emplace(this->weight, evo->now + this->delay);
     return;
 }
 
@@ -51,27 +50,25 @@ void Neuron::connect(Neuron * neuron, double weight, double delay){
 
 void Neuron::handle_incoming_spikes(EvolutionContext * evo){
 
-    Spike * spike;
-
     while (!(this->incoming_spikes.empty())){
         
-        spike = this->incoming_spikes.top();
+        auto spike = this->incoming_spikes.top();
 
-        if ((spike->arrival_time < evo->now)&(!spike->processed)){cout << "ERROR: spike missed" << endl;} 
+        if ((spike.arrival_time < evo->now)&(!spike.processed)){cout << "ERROR: spike missed" << endl;} 
 
-        if (!(spike -> processed)){
+        if (!(spike.processed)){
 
-            if ((spike->arrival_time >= evo->now ) && (spike->arrival_time < evo->now + evo->dt)){
+            if ((spike.arrival_time >= evo->now ) && (spike.arrival_time < evo->now + evo->dt)){
                 // Excitatory
-                if (spike->weight > 0.0){ this->state[1] += spike->weight;} 
+                if (spike.weight > 0.0){ this->state[1] += spike.weight;} 
                 // Inhibitory
-                else if (spike->weight < 0.0){ this->state[2] -= spike->weight;}
+                else if (spike.weight < 0.0){ this->state[2] -= spike.weight;}
                 // Spurious zero-weight
                 else{
                     cout << "Warning: a zero-weighted spike was received" << endl;
-                    cout << "\tweight is " << spike->weight<< endl; 
+                    cout << "\tweight is " << spike.weight<< endl; 
                 }
-                spike->processed = true;
+                spike.processed = true;
 
                 // Removes the spike from the incoming spikes
                 this->incoming_spikes.pop();

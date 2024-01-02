@@ -9,7 +9,7 @@ def test_injector():
     spikenet.populations["Albert"].monitorize()
     spikenet.populations["MonaLisa"].monitorize()
     
-    spikenet.interface.run(dt=0.2, time=50)
+    spikenet.interface.run(dt=0.1, time=50)
     return spikenet
 
 def test_run():
