@@ -32,6 +32,7 @@ cdef extern from "include/neurons.hpp" namespace "neuron_type":
     cdef neuron_type dummy
     cdef neuron_type aqif
     cdef neuron_type izhikevich
+    cdef neuron_type aeif
 
 cdef extern from "include/network.hpp":
     cdef cppclass Projection:

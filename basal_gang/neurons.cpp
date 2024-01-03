@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <queue>
 #include <chrono>
+#include <cmath>
 
 #include "include/base_objects.hpp"
 #include "include/devices.hpp"
@@ -92,17 +93,22 @@ void Neuron::evolve(EvolutionContext * evo){
     this->evolve_state(evo);
     
     // Spike generation
-    if ((this -> state[0]) > this->E_thr){ this -> spike(evo);}
+    if ((this -> state[0]) > this->E_thr){ this -> emit_spike(evo);}
 }
 
-void Neuron::spike(EvolutionContext * evo){
+void Neuron::emit_spike(EvolutionContext * evo){
     for (auto synapse : this->efferent_synapses){ (*synapse).fire(evo); }
 
     this -> last_spike_time = evo -> now;
-    this -> state[0] = this->E_rest;
-
     ((this->population)->n_spikes_last_step) ++;
+
+    this-> on_spike(evo);
 }
+
+void Neuron::on_spike(EvolutionContext * evo){
+    this->state[0] = this->E_rest;
+}
+
 
 // *************************** More detailed models ************************ //
 
@@ -145,25 +151,65 @@ void izhikevich_neuron::evolve_state(EvolutionContext * evo){
     this->state[3] += evo->dt * this->a * ( this->b * V_m - u);  // u
 
     // Synaptic currents
-    this -> state [0] -= evo->dt * (this->state [1])*(  V_m - this->E_exc);
-    this -> state [0] -= evo->dt * (this->state [2])*(  V_m - this->E_inh);
+    this->state[0] -= evo->dt * (this->state[1])*(  V_m - this->E_exc);
+    this->state[0] -= evo->dt * (this->state[2])*(  V_m - this->E_inh);
 
     // Conductances
     this->state[1] -= (this->state[1]) * (evo->dt) / (this->tau_e);
     this->state[2] -= (this->state[2]) * (evo->dt) / (this->tau_i);
 
+    if (this->state[1] > MAX_GSYN_EXC){this->state[1] = MAX_GSYN_EXC;}
+    if (this->state[2] > MAX_GSYN_INH){this->state[2] = MAX_GSYN_INH;}
+
     if (abs(this->state[0] - V_m)> MAX_POTENTIAL_INCREMENT){std::cout << "WARNING: membrane potential increment over maximum"<< std::endl;}
 
 }
 
-void izhikevich_neuron::spike(EvolutionContext * evo){ 
-
-    for (auto synapse : this->efferent_synapses){ (*synapse).fire(evo); }
-
+void izhikevich_neuron::on_spike(EvolutionContext * evo){ 
+    // Does not depend on evolution context
     this->state[0]  = this->E_rest;
     this->state[3] += this->d;
+}
 
-    this->last_spike_time = evo->now;
-    ((this->population)->n_spikes_last_step) ++;
+aeif_neuron::aeif_neuron(Population * population): Neuron(population){
 
+    this->C_m = 40.;
+    this->E_rest = -55.1;
+    this->E_exc = 0.;
+    this->E_inh = -65.;
+    this->E_reset = -60.;
+    this->E_thr = -54.7;
+    this->g_L = 1.;
+    this->tau_e= 10.;
+    this->tau_i= 5.5;
+    this-> a = 2.5;
+    this->b = 70.;
+    this->tau_w = 20.;
+    this->Delta =  1.7;
+
+    this->state = {this->E_rest, 0.0, 0.0, 0.0};
+
+}
+
+void aeif_neuron::evolve_state(EvolutionContext * evo){
+    double V_m = this->state[0];
+    double u = this->state[3];
+
+    this->state[0] += evo->dt/C_m * (-g_L*((V_m - E_rest) + Delta * std::exp((V_m - E_rest)/Delta )));
+    this->state[0] -= evo->dt/C_m * u;
+
+    // Synaptic currents
+    this->state[0] -= evo->dt * (this->state[1])*(  V_m - this->E_exc);
+    this->state[0] -= evo->dt * (this->state[2])*(  V_m - this->E_inh);
+
+    // Conductances
+    this->state[1] -= (this->state[1]) * (evo->dt) / (this->tau_e);
+    this->state[2] -= (this->state[2]) * (evo->dt) / (this->tau_i);
+
+    this->state[3] += - evo->dt * ( u / tau_w + a/tau_w*(state[0] - E_rest));
+}
+
+void aeif_neuron::on_spike(EvolutionContext * evo){
+    this->state[0] = this->E_rest;
+    this->state[3] += this->b * evo->dt;
 }

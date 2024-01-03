@@ -16,7 +16,8 @@ import ctypes
 import numpy as np
 cimport numpy as np
 
-NEURON_TYPES = {"dummy":0, "aqif":1, "izhikevich":2}
+NEURON_TYPES = {"dummy":0, "aqif":1, "izhikevich":2, "aeif":3}
+
 ctypedef vector[double] neuron_state
 
 cdef class Projection():

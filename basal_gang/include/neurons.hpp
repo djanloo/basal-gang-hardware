@@ -3,9 +3,12 @@
 #include <vector>
 #include <queue>
 
+#define MAX_GSYN_EXC 15.0
+#define MAX_GSYN_INH 15.0
+
 using namespace std;
 
-enum class neuron_type : unsigned int {dummy, aqif, izhikevich};
+enum class neuron_type : unsigned int {dummy, aqif, izhikevich, aeif};
 typedef vector<double> neuron_state;
 
 // The menu:
@@ -92,6 +95,7 @@ class Neuron{
         void connect(Neuron * neuron, double weight, double delay);
         void handle_incoming_spikes(EvolutionContext * evo);
         void evolve(EvolutionContext * evo);
+        void emit_spike(EvolutionContext * evo);
 
         // Monitor function returns the state
         // (Maybe later I will divide V from gsyn, too much data otherwise)
@@ -100,7 +104,7 @@ class Neuron{
         };
 
         // These must be implemented for each specific neuron
-        virtual void spike(EvolutionContext * evo);
+        virtual void on_spike(EvolutionContext * evo);
         virtual void evolve_state(EvolutionContext * evo){cout << "WARNING: using virtual evolve_state of <Neuron>";};
         virtual void evolve_synapses(EvolutionContext * evo){cout << "WARNING: using virtual evolve_synapses of <Neuron>";};
 };
@@ -117,13 +121,28 @@ class aqif_neuron : public Neuron {
 
         // Explicitly override the evolution function
         void evolve_state(EvolutionContext * evo) override;
+
 };
 
 class izhikevich_neuron : public Neuron {
     public:
         izhikevich_neuron(Population * population);
         void evolve_state(EvolutionContext * evo) override;
-        void spike(EvolutionContext * evo) override;
+        void on_spike(EvolutionContext * evo) override;
     private:
         double a,b,c,d;
+};
+
+/**
+ * The adaptive exponential integrate and fire
+ * data took from https://neuronaldynamics.epfl.ch/online/Ch6.S2.html
+*/
+
+class aeif_neuron : public Neuron {
+    public:
+        aeif_neuron(Population * population);
+        void evolve_state(EvolutionContext * evo) override;
+        void on_spike(EvolutionContext * evo) override;
+    private:
+        double a, b,tau_w, Delta, R, E_reset, C_m, g_L;
 };
