@@ -22,6 +22,7 @@ Population::Population(int n_neurons, neuron_type nt, SpikingNetwork * spiking_n
         case neuron_type::dummy: new Neuron(this); break;       // remember not to push_back here
         case neuron_type::aqif: new aqif_neuron(this); break;   // calling the constructor is enough
         case neuron_type::izhikevich: new izhikevich_neuron(this); break;
+        case neuron_type::aeif: new aeif_neuron(this); break;
         };
     }
 
