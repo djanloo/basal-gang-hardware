@@ -1,0 +1,3 @@
+[submodule "external/odeint"]
+	path = external/odeint
+	url = https://github.com/boostorg/odeint.git
