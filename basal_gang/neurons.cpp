@@ -10,6 +10,8 @@
 #include "include/neurons.hpp"
 #include "include/network.hpp"
 
+#include <boost/numeric/odeint.hpp>
+
 #define MAX_POTENTIAL_INCREMENT 10 // mV
 
 void Synapse::fire(EvolutionContext * evo){
